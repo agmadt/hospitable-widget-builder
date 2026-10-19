@@ -30,6 +30,7 @@ export const PLATFORMS: { id: Platform; label: string; steps: string[] }[] = [
       'Click <b>Enter Code</b>, make sure <b>Code</b> is selected, paste your snippet and click <b>Update</b>.',
       'Drag the element\'s bottom handle to the height shown above. Wix does not resize embeds on its own.',
       'Switch to the <b>mobile</b> view in the Editor, set the mobile height too, then <b>Publish</b>.',
+      'More widgets: give each one its own Embed HTML with its whole snippet, because every embed is a separate frame. Widgets that sit one under the other can share one embed: paste their elements together and the script once.',
     ],
   },
   {
@@ -39,6 +40,7 @@ export const PLATFORMS: { id: Platform; label: string; steps: string[] }[] = [
       'Edit the page, click <b>Add Block</b> and choose <b>Code</b>.',
       'Paste your snippet, leave the mode on <b>HTML</b>, and turn off <b>Display Source</b>.',
       'Save and publish. Code blocks that run scripts need a plan that allows JavaScript.',
+      'More widgets: add a Code block for each. Widgets of the same property share one request to your Worker.',
     ],
   },
   {
@@ -48,6 +50,7 @@ export const PLATFORMS: { id: Platform; label: string; steps: string[] }[] = [
       'In the block editor, click <b>+</b> and add a <b>Custom HTML</b> block.',
       'Paste your snippet and click <b>Update</b> or <b>Publish</b>.',
       'On WordPress.com, scripts in pages need a Business plan or higher.',
+      'More widgets: add a Custom HTML block for each. Widgets of the same property share one request to your Worker.',
     ],
   },
   {
@@ -56,6 +59,7 @@ export const PLATFORMS: { id: Platform; label: string; steps: string[] }[] = [
     steps: [
       'Open the <b>Add</b> panel and drag a <b>Code Embed</b> element onto the page.',
       'Paste your snippet and click <b>Save &amp; Close</b>, then publish. Embeds run on the published site.',
+      'More widgets: add a Code Embed for each. Widgets of the same property share one request to your Worker.',
     ],
   },
   {
@@ -63,7 +67,7 @@ export const PLATFORMS: { id: Platform; label: string; steps: string[] }[] = [
     label: 'Any other site',
     steps: [
       'Paste the snippet wherever your website builder lets you add HTML: an "HTML", "Code" or "Embed" block.',
-      'Several widgets on one page share one copy of <code>widget.js</code>, so pasting it twice does no harm.',
+      'Several widgets on one page share one copy of <code>widget.js</code>, so pasting it twice does no harm, and widgets of the same property share one request to your Worker.',
     ],
   },
 ];

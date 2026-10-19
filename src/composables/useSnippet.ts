@@ -3,7 +3,7 @@ import { config } from '@/config';
 import { buildSnippet } from '@/lib/snippet';
 import { T } from '@/lib/templates';
 import { W } from '@/lib/widget';
-import { attrs, design, needsProperty, runtime, snippetOptions, snippetStyle, state, template } from '@/stores/builder';
+import { attrs, datasets, design, needsProperty, runtime, snippetOptions, snippetStyle, state, template } from '@/stores/builder';
 
 /** The snippet for the current design, or null until a Worker is connected. */
 export function useSnippet() {
@@ -17,7 +17,8 @@ export function useSnippet() {
       custom: design.value.custom,
       id: `hosp-${state.type}-${design.value.uid}`,
       worker: conn.worker,
-      property: needsProperty.value ? state.property : '',
+      // A host-only widget names the property too, so it shares that property's request.
+      property: needsProperty.value || datasets.value.includes('host') ? state.property : '',
       options: snippetOptions.value,
       style: snippetStyle.value,
       attrs: attrs.value,

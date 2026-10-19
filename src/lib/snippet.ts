@@ -42,7 +42,7 @@ export function buildSnippet(i: SnippetInput): string {
   const attr = (name: string, value: string) => ` ${name}="${escapeHtml(value)}"`;
   let div = i.custom === null ? attr('data-hosp', i.type) : attr('data-hosp-template', i.id);
   div += attr('data-hosp-worker', i.worker);
-  if (datasets.some((s) => s !== 'host' && s !== 'properties')) div += attr('data-hosp-property', i.property);
+  if (i.property || datasets.some((s) => s !== 'host' && s !== 'properties')) div += attr('data-hosp-property', i.property);
   // Saying what the widget needs lets widget.js fetch its data straight away.
   div += attr('data-hosp-data', datasets.join(',')) + attr('data-hosp-modules', modules.filter((m) => m !== 'templates').join(','));
   if (i.custom === null && i.options) div += attr('data-hosp-options', i.options);

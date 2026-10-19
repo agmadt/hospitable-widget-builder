@@ -82,8 +82,8 @@ function download() {
         </div>
         <div>
           <b>{{ weight.requests }}</b>
-          <span>request{{ weight.requests === 1 ? '' : 's' }} to your Worker per view</span>
-          <small>only once the widget nears the screen</small>
+          <span>request{{ weight.requests === 1 ? '' : 's' }} to your Worker per visitor per hour</span>
+          <small>shared with your other widgets for this property</small>
         </div>
       </div>
       <pre id="snippet" class="snippet" tabindex="0" aria-label="Your snippet" v-html="highlight(snippet ?? '')" />
