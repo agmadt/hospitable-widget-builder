@@ -19,7 +19,7 @@ For the Connect step, run the kit's Worker in dummy mode alongside (`npm run dev
 | --- | --- |
 | `npm run dev` | Dev server with hot reload |
 | `npm run build` | Type-check, then build to `dist/` |
-| `npm run deploy` | Build and deploy to Cloudflare Pages (`hospitable-widget.adhityoagam.com`) |
+| `npm run deploy` | Deploy `dist/` to Cloudflare (run `npm run build` first) |
 | `npm test` | Unit and component tests (Vitest, happy-dom) |
 | `npm run typecheck` | `vue-tsc` |
 | `npm run e2e` | Every widget type in real Chrome: the copied snippet must render exactly like the preview, with the Worker up and with it unreachable. Needs both dev servers; set `CHROME_PATH` if Chrome isn't in the default macOS location. |
@@ -39,9 +39,9 @@ The kit's `BUILDER_URL` (in its `wrangler.jsonc`) points at `https://hospitable-
 
 ## Hosting
 
-The builder is a Cloudflare Pages project, `hospitable-widget-builder`, with the custom domain `hospitable-widget.adhityoagam.com`. Static files on Pages have no request limit. `npm run deploy` builds and deploys `dist/` to it.
+The builder is a Cloudflare Worker with static files only (`hospitable-widget-builder`, see `wrangler.jsonc`), built and deployed by Cloudflare from this repo: build command `npm run build`, deploy command `npx wrangler deploy`. It has no Worker script, so every request is a static asset request, which Cloudflare serves free and without a request limit.
 
-The custom domain is set in the Cloudflare dashboard (Workers & Pages → `hospitable-widget-builder` → Custom domains); Cloudflare adds the DNS record. If the builder moves, update the kit's `BUILDER_URL` too.
+The custom domain `hospitable-widget.adhityoagam.com` is set in the Cloudflare dashboard (Workers & Pages → `hospitable-widget-builder` → Settings → Domains & Routes). If the builder moves, update the kit's `BUILDER_URL` too.
 
 ## Layout
 
