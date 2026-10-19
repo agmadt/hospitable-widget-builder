@@ -19,7 +19,8 @@ export function loadWidget(src = config.previewWidgetSrc): Promise<HospWidgets> 
     };
     document.head.appendChild(s);
   }).then(async (hosp) => {
-    await hosp.need(ALL_MODULES);
+    // Right after a release, jsDelivr can fail a file while it minifies it; one more try usually works.
+    await hosp.need(ALL_MODULES).catch(() => new Promise((r) => setTimeout(r, 2000)).then(() => hosp.need(ALL_MODULES)));
     return hosp;
   });
   return loading;
