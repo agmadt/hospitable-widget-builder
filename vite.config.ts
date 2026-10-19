@@ -32,9 +32,6 @@ function localWidget(): Plugin {
 }
 
 export default defineConfig({
-  // The builder lives at https://hospitable.adhityoagam.com/widgets/
-  base: '/widgets/',
-  build: { outDir: 'dist/widgets', emptyOutDir: true },
   plugins: [vue(), localWidget()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   server: { host: '127.0.0.1', port: 5173 },

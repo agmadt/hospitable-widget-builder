@@ -8,7 +8,7 @@ The kit it writes snippets for (the Worker and `widget.js`) is [hospitable-widge
 
 ```sh
 npm install
-npm run dev          # http://127.0.0.1:5173/widgets/
+npm run dev          # http://127.0.0.1:5173
 ```
 
 The preview runs the real `widget.js` and its modules, all loaded up front. During `npm run dev` they come from the kit checkout next to this folder (`../hospitable-widgets/widget/`, served at `/hosp/`; or set `KIT_DIR`), so edits show on reload. Production builds load the released ones from jsDelivr.
@@ -18,8 +18,8 @@ For the Connect step, run the kit's Worker in dummy mode alongside (`npm run dev
 | Command | Does |
 | --- | --- |
 | `npm run dev` | Dev server with hot reload |
-| `npm run build` | Type-check, then build to `dist/widgets/` |
-| `npm run deploy` | Build and deploy to Cloudflare at `hospitable.adhityoagam.com/widgets` |
+| `npm run build` | Type-check, then build to `dist/` |
+| `npm run deploy` | Build and deploy to Cloudflare Pages (`hospitable-widget.adhityoagam.com`) |
 | `npm test` | Unit and component tests (Vitest, happy-dom) |
 | `npm run typecheck` | `vue-tsc` |
 | `npm run e2e` | Every widget type in real Chrome: the copied snippet must render exactly like the preview, with the Worker up and with it unreachable. Needs both dev servers; set `CHROME_PATH` if Chrome isn't in the default macOS location. |
@@ -35,13 +35,13 @@ Public settings live in `.env` (override in `.env.local`):
 | `VITE_WIDGET_MAJOR` | Major version of `widget.js` snippets load (`1` → `@1`, the newest 1.x). |
 | `VITE_DEMO_WORKER` | A Worker deployed with `HOSPITABLE_PAT=dummy`, for "Try the demo Worker". `.env.development` points it at the local one. |
 
-The kit's `BUILDER_URL` (in its `wrangler.jsonc`) points at `https://hospitable.adhityoagam.com/widgets/`, so a fresh Worker sends the host back here.
+The kit's `BUILDER_URL` (in its `wrangler.jsonc`) points at `https://hospitable-widget.adhityoagam.com/`, so a fresh Worker sends the host back here.
 
 ## Hosting
 
-The builder is a Cloudflare Worker with static files only, on the route `hospitable.adhityoagam.com/widgets*` (see `wrangler.jsonc`), built with Vite's `base: '/widgets/'`. Other paths on that hostname stay free. A route needs a proxied DNS record for `hospitable.adhityoagam.com` in the `adhityoagam.com` zone (for example `AAAA hospitable 100::`, proxied). Then `npm run deploy`.
+The builder is a Cloudflare Pages project, `hospitable-widget-builder`, with the custom domain `hospitable-widget.adhityoagam.com`. Static files on Pages have no request limit. `npm run deploy` builds and deploys `dist/` to it.
 
-To host it elsewhere, change `base` in `vite.config.ts`, the route in `wrangler.jsonc`, and the kit's `BUILDER_URL`.
+The custom domain is set in the Cloudflare dashboard (Workers & Pages → `hospitable-widget-builder` → Custom domains); Cloudflare adds the DNS record. If the builder moves, update the kit's `BUILDER_URL` too.
 
 ## Layout
 

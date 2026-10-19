@@ -8,7 +8,7 @@
 
 import puppeteer from 'puppeteer-core';
 
-const BUILDER = process.env.BUILDER || 'http://127.0.0.1:5173/widgets/';
+const BUILDER = process.env.BUILDER || 'http://127.0.0.1:5173/';
 const WORKER = process.env.WORKER || 'http://127.0.0.1:8787';
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const widgetSrc = new URL('/hosp/widget.js', BUILDER).href;

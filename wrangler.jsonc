@@ -1,9 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  // The builder: static files only, served at hospitable.adhityoagam.com/widgets.
-  // Other paths on that hostname stay free for anything else.
+  // Cloudflare Pages project for the builder, served at hospitable-widget.adhityoagam.com.
   "name": "hospitable-widget-builder",
   "compatibility_date": "2026-10-15",
-  "assets": { "directory": "./dist" },
-  "routes": [{ "pattern": "hospitable.adhityoagam.com/widgets*", "zone_name": "adhityoagam.com" }]
+  "pages_build_output_dir": "./dist"
 }
