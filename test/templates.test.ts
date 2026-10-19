@@ -1,83 +1,68 @@
 import { describe, expect, it } from 'vitest';
-import { STARTERS, applyOptions, attrOptions, defaults, displayOptions, optionText, parseTemplate } from '@/lib/templates';
-import { WIDGET_TYPES } from '@/lib/catalog';
+import { attrOptions, changedOptions, displayOptions } from '@/lib/templates';
+import { buildSnippet, type SnippetInput } from '@/lib/snippet';
+import type { HospWidgets, TemplateMeta } from '@/types';
 
-describe('starter templates', () => {
-  it('has one valid starter per widget type', () => {
-    for (const t of WIDGET_TYPES) {
-      const s = STARTERS[t.id];
-      expect(s, t.id).toBeDefined();
-      expect(s.meta.name).toBeTruthy();
-      expect(s.body).not.toMatch(/<!--hw/);
-    }
-    expect(Object.keys(STARTERS)).toHaveLength(WIDGET_TYPES.length);
+const meta: TemplateMeta = {
+  name: 'Reviews',
+  options: [
+    { key: 'heading', label: 'Heading', type: 'text', default: 'What guests say' },
+    { key: 'layout', label: 'Layout', type: 'select', default: 'carousel' },
+    { key: 'min-rating', label: 'Minimum rating', type: 'select', default: '4', target: 'attr' },
+    { key: 'reviews-limit', label: 'Show at most', type: 'number', default: '9', target: 'attr' },
+    { key: 'review-ids', label: 'Picked', type: 'reviews', default: '', target: 'attr' },
+  ],
+};
+
+describe('options', () => {
+  it('puts display choices in attributes, skipping empty ones', () => {
+    const attrs = attrOptions(meta, { 'min-rating': '0', 'reviews-limit': '6', 'review-ids': '' });
+    expect(attrs).toEqual({ 'reviews-limit': '6' });
+    expect(displayOptions(attrs)).toEqual({ reviewsLimit: '6' });
   });
 
-  it('leaves no builder tags behind with default options', () => {
-    for (const t of WIDGET_TYPES) {
-      const s = STARTERS[t.id];
-      expect(applyOptions(s.body, defaults(s.meta, { card: 'card-border' }), s.meta), t.id).not.toMatch(/\[\[/);
-    }
-  });
-
-  it('never puts a template tag where the HTML parser would mangle it', () => {
-    // Inside a start tag, a tag outside quotes is read as an attribute name and torn apart
-    // (<details {#_first}open{/_first}> used to come out as an empty "Details" box).
-    for (const t of WIDGET_TYPES) {
-      for (const tag of STARTERS[t.id].body.match(/<[a-zA-Z][^<>]*>/g) ?? []) {
-        expect(tag.replace(/"[^"]*"|'[^']*'/g, '""'), `${t.id}: ${tag}`).not.toMatch(/\{[#^/]?[\w.]+\}/);
-      }
-    }
-  });
-
-  it('never puts template tags directly between table rows', () => {
-    // The HTML parser moves such text out of the table; tags there must sit in <!-- -->.
-    for (const t of WIDGET_TYPES) {
-      expect(STARTERS[t.id].body, t.id).not.toMatch(/<(tr|thead|tbody|table)[^>]*>\s*\{[#^/]/);
-    }
+  it('records only template options the host changed', () => {
+    expect(changedOptions(meta, { heading: 'What guests say', layout: 'cards', 'min-rating': '5' })).toEqual({ layout: 'cards' });
   });
 });
 
-describe('applyOptions', () => {
-  const meta = parseTemplate('<!--hw {"name":"T","options":[{"key":"title","label":"T","type":"text"},{"key":"link","label":"L","type":"url"}]} -->x').meta;
+describe('snippet', () => {
+  const hosp = {
+    analyze: () => ({ fields: [], datasets: ['property', 'reviews'] }),
+    plan: () => ['reviews', 'pager'],
+  } as unknown as HospWidgets;
+  const base: SnippetInput = {
+    hosp,
+    type: 'reviews',
+    template: '<style>x</style><section>{#reviews}{text}{/reviews}</section>',
+    custom: null,
+    id: 'hosp-reviews-ab12',
+    worker: 'https://w.example.workers.dev',
+    property: 'p1',
+    options: 'layout=cards',
+    style: 'accent=%23c2410c',
+    attrs: { 'reviews-limit': '6' },
+    fontHref: '',
+    widgetSrc: 'https://cdn.jsdelivr.net/gh/agmadt/hospitable-widgets@1/widget/widget.min.js',
+  };
 
-  it('fills values and sections', () => {
-    const body = '[[#show]]A[[/show]][[^show]]B[[/show]][[#layout=grid]]G[[/layout=grid]][[^layout=grid]]N[[/layout=grid]]';
-    expect(applyOptions(body, { show: 'on', layout: 'grid' })).toBe('AG');
-    expect(applyOptions(body, { show: 'off', layout: 'list' })).toBe('BN');
+  it('is one element and one script for a starter template', () => {
+    expect(buildSnippet(base)).toBe(
+      '<div data-hosp="reviews" data-hosp-worker="https://w.example.workers.dev" data-hosp-property="p1" data-hosp-data="property,reviews" data-hosp-modules="reviews,pager" data-hosp-options="layout=cards" data-hosp-style="accent=%23c2410c" data-hosp-reviews-limit="6"></div>\n' +
+        '<script src="https://cdn.jsdelivr.net/gh/agmadt/hospitable-widgets@1/widget/widget.min.js" defer></script>',
+    );
   });
 
-  it('handles nested sections', () => {
-    expect(applyOptions('[[#a]]1[[#b]]2[[/b]]3[[/a]]', { a: 'on', b: 'off' })).toBe('13');
+  it('leaves out what is default', () => {
+    expect(buildSnippet({ ...base, options: '', style: '', attrs: {} })).not.toMatch(/data-hosp-(options|style|reviews-limit)/);
   });
 
-  it('escapes typed text so it cannot become HTML or a template tag', () => {
-    const out = applyOptions('<h2>[[title]]</h2>', { title: '<b>{property_name}</b> & co' }, meta);
-    expect(out).toContain('&lt;b&gt;');
-    expect(out).toContain('&amp; co');
-    expect(out).not.toMatch(/\{property_name\}/);
-  });
-
-  it("turns an option's own tokens into template tags", () => {
-    const tokens = { count: 'amenity_count', more: 'amenities_more' };
-    expect(optionText('Show all {count} amenities', 'text', tokens)).toBe('Show all {amenity_count} amenities');
-    expect(optionText('+ {more} more', 'text', tokens)).toBe('+ {amenities_more} more');
-    expect(optionText('{property_name}', 'text', tokens)).toBe('{\u200Bproperty_name}');
-  });
-
-  it('only lets https links through', () => {
-    expect(optionText('javascript:alert(1)', 'url')).toBe('#');
-    expect(optionText('http://example.com', 'url')).toBe('#');
-    expect(optionText('https://example.com/book?a=1&b=2', 'url')).toBe('https://example.com/book?a=1&amp;b=2');
-    expect(optionText('https://site.com/stay/{id}', 'pattern')).toBe('https://site.com/stay/{id}');
-  });
-});
-
-describe('display choices', () => {
-  it('turns attr options into data-hosp-* attributes, skipping empty ones', () => {
-    const meta = STARTERS.reviews.meta;
-    const attrs = attrOptions(meta, defaults(meta, { 'min-rating': '0', 'reviews-limit': '6' }));
-    expect(attrs).toEqual({ 'reviews-sort': 'newest', 'reviews-limit': '6' });
-    expect(displayOptions(attrs)).toEqual({ reviewsSort: 'newest', reviewsLimit: '6' });
+  it('carries hand-edited HTML in a <template>', () => {
+    const out = buildSnippet({ ...base, custom: '<section>mine</section>', fontHref: 'https://fonts.googleapis.com/css2?family=Inter' });
+    expect(out.split('\n')[0]).toBe('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter">');
+    expect(out).toContain('<template id="hosp-reviews-ab12">');
+    expect(out).toContain('data-hosp-template="hosp-reviews-ab12"');
+    expect(out).not.toContain('data-hosp="');
+    expect(out).not.toContain('data-hosp-options');
   });
 });

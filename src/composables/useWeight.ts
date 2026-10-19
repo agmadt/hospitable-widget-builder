@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 import { needs } from '@/lib/snippet';
 import { W } from '@/lib/widget';
-import { runtime, template } from '@/stores/builder';
+import { design, runtime, template } from '@/stores/builder';
 
 // widget/sizes.json in the kit: each file's download size (minified + gzip),
 // kept up to date by the kit's CI. It sits next to widget.js on jsDelivr.
@@ -23,8 +23,10 @@ export function useWeight() {
     if (!runtime.ready) return null;
     loadSizes();
     const n = needs(W(), template.value);
+    // A snippet that names a starter template also loads the templates module.
+    const mods = (design.value.custom === null ? ['templates'] : []).concat(n.modules.filter((m) => m !== 'analyze' && m !== 'templates'));
     const files = [{ name: 'widget.js', size: sizes.value?.['widget.js'] }].concat(
-      n.modules.filter((m) => m !== 'analyze').map((m) => ({ name: m, size: sizes.value?.[`modules/${m}.js`] })),
+      mods.map((m) => ({ name: m, size: sizes.value?.[`modules/${m}.js`] })),
     );
     const total = files.every((f) => typeof f.size === 'number') ? files.reduce((t, f) => t + (f.size ?? 0), 0) : null;
     return { files, total, requests: n.requests };

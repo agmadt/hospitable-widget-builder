@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import ColorField from '@/components/ui/ColorField.vue';
 import RangeField from '@/components/ui/RangeField.vue';
-import { FONTS, PRESETS } from '@/lib/style';
+import { PRESETS } from '@/lib/style';
+import { T } from '@/lib/templates';
+
+const FONTS = T().FONTS;
 import { applyPreset, state } from '@/stores/builder';
 </script>
 
@@ -18,14 +21,14 @@ import { applyPreset, state } from '@/stores/builder';
     <div class="f">
       <label for="s-font">Font</label>
       <select id="s-font" v-model="state.style.font">
-        <option v-for="(f, key) in FONTS" :key="key" :value="key">{{ f.label }}</option>
+        <option v-for="(f, key) in FONTS" :key="key" :value="key">{{ f[0] }}</option>
       </select>
     </div>
     <div class="f">
       <label for="s-heading">Heading font</label>
       <select id="s-heading" v-model="state.style.headingFont">
         <option value="same">Same as text</option>
-        <option v-for="(f, key) in FONTS" :key="key" :value="key">{{ f.label }}</option>
+        <option v-for="(f, key) in FONTS" :key="key" :value="key">{{ f[0] }}</option>
       </select>
     </div>
     <RangeField id="s-radius" v-model="state.style.radius" label="Corner radius" :min="0" :max="28" />

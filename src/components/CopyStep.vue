@@ -7,7 +7,7 @@ import { copyText } from '@/lib/clipboard';
 import { testPage } from '@/lib/snippet';
 import { PLATFORMS } from '@/lib/catalog';
 import { config } from '@/config';
-import { body, runtime, state } from '@/stores/builder';
+import { body, design, runtime, state } from '@/stores/builder';
 import { useWeight } from '@/composables/useWeight';
 
 const { snippet, build } = useSnippet();
@@ -88,8 +88,10 @@ function download() {
       </div>
       <pre id="snippet" class="snippet" tabindex="0" aria-label="Your snippet" v-html="highlight(snippet ?? '')" />
       <p class="muted small">
-        {{ size }} KB · includes a snapshot of today's data, shown if your Worker is ever unreachable.
-        <template v-if="runtime.connection.mode === 'dummy'">This snippet uses sample data until your Worker has a real token.</template>
+        <template v-if="design.custom === null">One element and one script: the design loads from jsDelivr, the data from your Worker.</template>
+        <template v-else>{{ size }} KB: your own HTML travels in the snippet.</template>
+        Visitors' browsers keep the last data, so returning visitors still see the widget if your Worker can't be reached.
+        <template v-if="runtime.connection.mode === 'dummy'">This snippet shows sample data until your Worker has a real token.</template>
       </p>
     </div>
 

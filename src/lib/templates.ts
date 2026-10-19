@@ -1,67 +1,43 @@
-// Starter templates live in src/templates/<type>.html. Each starts with a
-// header, <!--hw {...} -->, describing the widget and its options. Options
-// without a target are applied here, before the template reaches widget.js:
-//   [[key]]                     the value, escaped
-//   [[#key]]…[[/key]]           kept when the option is on
-//   [[^key]]…[[/key]]           kept when it is off
-//   [[#key=value]]…[[/key=value]]  kept when it equals value
+// The starter templates live in the kit (widget/templates/*.html) and load
+// through its templates module, next to widget.js: the builder renders them
+// with exactly the code websites use. Nothing here is a second copy.
 
-import type { StarterTemplate, TemplateMeta, TemplateOption, WidgetType } from '@/types';
-import { escapeHtml } from './html';
+import { shallowReactive } from 'vue';
+import type { StarterTemplate, TemplateMeta, WidgetType } from '@/types';
+import { WIDGET_TYPES } from './catalog';
+import { W } from './widget';
 
-const files = import.meta.glob<string>('../templates/*.html', { query: '?raw', import: 'default', eager: true });
-const css = import.meta.glob<string>('../templates/_base.css', { query: '?raw', import: 'default', eager: true });
+/** [label, CSS font stack, Google Fonts family] */
+type Font = [string, string, string?];
 
-export function parseTemplate(text: string): StarterTemplate {
-  const m = /^\s*<!--hw\s*([\s\S]*?)-->\s*/.exec(text);
-  if (!m) return { meta: { name: 'Widget', options: [] }, body: text };
-  return { meta: JSON.parse(m[1]) as TemplateMeta, body: text.slice(m[0].length).trim() };
+export interface TemplatesModule {
+  FONTS: Record<string, Font>;
+  STYLE: Record<string, string>;
+  load(type: string): Promise<StarterTemplate>;
+  baseCss(): Promise<string>;
+  isOn(v: unknown): boolean;
+  values(meta: TemplateMeta, chosen: Record<string, string>): Record<string, string>;
+  applyOptions(body: string, values: Record<string, string>, meta: TemplateMeta): string;
+  styleCss(style: Record<string, unknown>): string;
+  fontHref(style: Record<string, unknown>): string;
+  useFonts(style: Record<string, unknown>): void;
+  render(starter: StarterTemplate, options: Record<string, string>, style: Record<string, unknown>, baseCss: string): string;
+  writeParams(obj: Record<string, string>): string;
 }
 
-export const STARTERS: Record<WidgetType, StarterTemplate> = Object.fromEntries(
-  Object.entries(files).map(([path, text]) => [path.replace(/^.*\/(.+)\.html$/, '$1'), parseTemplate(text)]),
-) as Record<WidgetType, StarterTemplate>;
+export const T = (): TemplatesModule => W().module('templates') as TemplatesModule;
 
-/** Shared widget CSS, minified to one line. */
-export const BASE_CSS = (Object.values(css)[0] || '').replace(/\s*\n\s*/g, '');
+/** Filled by loadStarters() before the builder shows anything. */
+export const STARTERS = shallowReactive({}) as Record<WidgetType, StarterTemplate>;
+export const base = { css: '' };
+
+export async function loadStarters(): Promise<void> {
+  const [css, ...starters] = await Promise.all([T().baseCss(), ...WIDGET_TYPES.map((t) => T().load(t.id))]);
+  base.css = css;
+  WIDGET_TYPES.forEach((t, i) => (STARTERS[t.id] = starters[i]));
+}
 
 export const isOn = (v: unknown): boolean => v !== undefined && v !== null && !['', 'off', '0', 'false'].includes(String(v));
-
-/** Option values with every default filled in. */
-export function defaults(meta: TemplateMeta, overrides: Record<string, string> = {}): Record<string, string> {
-  const values: Record<string, string> = {};
-  for (const o of meta.options) values[o.key] = o.default ?? '';
-  return { ...values, ...overrides };
-}
-
-export function applyOptions(body: string, values: Record<string, string>, meta?: TemplateMeta): string {
-  const options = Object.fromEntries((meta?.options ?? []).map((o) => [o.key, o]));
-  const section = /\[\[([#^])([\w-]+)(?:=([\w-]+))?\]\]([\s\S]*?)\[\[\/\2(?:=\3)?\]\]/g;
-  let out = body;
-  // Sections can nest; each pass resolves the outermost ones.
-  for (let pass = 0; pass < 20 && /\[\[[#^]/.test(out); pass++) {
-    out = out.replace(section, (_all, sigil: string, key: string, eq: string | undefined, inner: string) => {
-      const on = eq !== undefined ? String(values[key]) === eq : isOn(values[key]);
-      return (sigil === '#') === on ? inner : '';
-    });
-  }
-  return out.replace(/\[\[([\w-]+)\]\]/g, (_all, key: string) => optionText(values[key], options[key]?.type, options[key]?.tokens));
-}
-
-export function optionText(value: unknown, type?: TemplateOption['type'], tokens: Record<string, string> = {}): string {
-  const v = String(value ?? '').trim();
-  if (type === 'url') return isHttpsUrl(v) ? escapeHtml(v) : '#';
-  // A pattern may contain {id}, which widget.js fills in per property.
-  if (type === 'pattern') return /^https:\/\/[^\s"'<>]+$/.test(v) ? v.replace(/"/g, '%22') : '#';
-  // Typed text must not turn into template tags. Entities would not help: the
-  // browser decodes them when it parses the snippet, so a zero-width space
-  // after "{" keeps "{name}" from looking like a tag.
-  // The option's own tokens ({count}) become real template tags.
-  return escapeHtml(String(value ?? '')).replace(/\{(\w+)\}|\{|\[\[/g, (m: string, name?: string) => {
-    if (name && tokens[name]) return `{${tokens[name]}}`;
-    return m === '[[' ? '[\u200B[' : `{\u200B${m.slice(1)}`;
-  });
-}
 
 export function isHttpsUrl(v: string): boolean {
   return /^https:\/\/[^\s"'<>]+\.[^\s"'<>]+$/.test(v.trim());
@@ -79,7 +55,17 @@ export function attrOptions(meta: TemplateMeta, values: Record<string, string>):
   return out;
 }
 
-/** The same choices in the camelCase form widget.js reads from data-hosp-* attributes. */
+/** The template options the host changed from their defaults, for data-hosp-options. */
+export function changedOptions(meta: TemplateMeta, chosen: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const o of meta.options) {
+    if (o.target === 'attr' || !(o.key in chosen)) continue;
+    if (String(chosen[o.key]) !== String(o.default ?? '')) out[o.key] = String(chosen[o.key]);
+  }
+  return out;
+}
+
+/** The same display choices in the camelCase form widget.js reads from data-hosp-* attributes. */
 export function displayOptions(attrs: Record<string, string>): Record<string, string> {
   return Object.fromEntries(Object.entries(attrs).map(([k, v]) => [k.replace(/-([a-z])/g, (_m, c: string) => c.toUpperCase()), v]));
 }

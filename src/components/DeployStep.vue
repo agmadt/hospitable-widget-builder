@@ -29,8 +29,8 @@ async function tryDemo() {
         <p class="hint">Your design is saved in this browser, so it's still here when you come back.</p>
       </li>
       <li>
-        <h3>Come back here</h3>
-        <p>When it's done, click your Worker's link (<code>https://…workers.dev</code>) in the Cloudflare dashboard. It sends you straight back to this page, already connected.</p>
+        <h3>Open your Worker</h3>
+        <p>When Cloudflare finishes, click your Worker's address (<code>https://…workers.dev</code>) on its success page or in the dashboard. It opens the builder in a new tab, already connected, and this tab connects too.</p>
       </li>
     </ol>
     <div class="callout">

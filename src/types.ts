@@ -7,7 +7,7 @@ export type WidgetData = Record<string, unknown>;
 export type DisplayOptions = Record<string, string>;
 
 /** The modules widget.js can load next to itself. Formatting is built in. */
-export type WidgetModule = 'analyze' | 'calendar' | 'reviews' | 'lightbox' | 'pager';
+export type WidgetModule = 'analyze' | 'templates' | 'calendar' | 'reviews' | 'lightbox' | 'pager';
 
 /** The API widget.js puts on window.HospWidgets. */
 export interface HospWidgets {
@@ -23,6 +23,7 @@ export interface HospWidgets {
   plan(template: string, datasets?: Dataset[]): WidgetModule[];
   fetchData(worker: string, propertyId: string | null, datasets: Dataset[]): Promise<WidgetData>;
   need(modules: WidgetModule[]): Promise<unknown[]>;
+  module(name: WidgetModule): unknown;
 }
 
 declare global {

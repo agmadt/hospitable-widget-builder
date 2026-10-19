@@ -3,14 +3,15 @@
 
 import { computed, reactive, shallowRef, watch } from 'vue';
 import type { Connection, Dataset, Design, Device, Platform, PreviewSource, Step, WidgetData, WidgetStyle, WidgetType } from '@/types';
-import { STARTERS, BASE_CSS, applyOptions, attrOptions, defaults, displayOptions } from '@/lib/templates';
-import { DEFAULT_STYLE, PRESETS, styleCss } from '@/lib/style';
+import { STARTERS, T, attrOptions, base, changedOptions, displayOptions } from '@/lib/templates';
+import { DEFAULT_STYLE, PRESETS, changedStyle } from '@/lib/style';
+import { WIDGET_TYPES } from '@/lib/catalog';
 import { asParsed } from '@/lib/html';
 import { sampleData, sampleProperties } from '@/lib/sample';
 import { connectWorker, normalizeWorker, type ConnectResult } from '@/lib/worker';
 import { W } from '@/lib/widget';
 
-const STORE_KEY = 'hw-builder-v1';
+export const STORE_KEY = 'hw-builder-v1';
 
 interface Persisted {
   type: WidgetType;
@@ -33,7 +34,7 @@ function load(): Persisted {
     /* private mode or bad JSON: start fresh */
   }
   return {
-    type: saved.type && saved.type in STARTERS ? saved.type : 'description',
+    type: saved.type && WIDGET_TYPES.some((t) => t.id === saved.type) ? saved.type : 'description',
     style: { ...DEFAULT_STYLE, ...saved.style },
     designs: saved.designs ?? {},
     worker: saved.worker ?? '',
@@ -92,16 +93,23 @@ watch(() => state.type, ensureDesign, { immediate: true, flush: 'sync' });
 export const design = computed(() => state.designs[state.type] ?? ensureDesign(state.type));
 
 /** Every option of the current widget, with defaults, plus the card style. */
-export const optionValues = computed(() => defaults(starter.value.meta, { ...design.value.options, card: state.style.card }));
+export const optionValues = computed<Record<string, string>>(() => ({ ...T().values(starter.value.meta, design.value.options), card: state.style.card }));
 
 export const attrs = computed(() => attrOptions(starter.value.meta, optionValues.value));
 export const previewOptions = computed(() => displayOptions(attrs.value));
 
 /** The template body: the host's own HTML, or the starter with options applied. */
-export const body = computed(() => design.value.custom ?? applyOptions(starter.value.body, optionValues.value, starter.value.meta));
+export const body = computed(() => design.value.custom ?? T().applyOptions(starter.value.body, optionValues.value, starter.value.meta));
 
-/** Exactly what goes inside the snippet's <template>, as the browser parses it. */
-export const template = computed(() => asParsed(`<style>${styleCss(state.style)}\n${BASE_CSS}</style>\n${body.value}`));
+/**
+ * The full template, as the browser parses it: what widget.js renders for a
+ * snippet that names this starter, or what a custom snippet's <template> holds.
+ */
+export const template = computed(() => asParsed(`<style>${T().styleCss(state.style)}\n${base.css}</style>\n${body.value}`));
+
+/** What the snippet records: only what the host changed from the defaults. */
+export const snippetOptions = computed(() => T().writeParams(changedOptions(starter.value.meta, design.value.options)));
+export const snippetStyle = computed(() => T().writeParams(changedStyle(state.style)));
 
 export const datasets = computed<Dataset[]>(() => (runtime.ready ? W().analyze(template.value).datasets : ['property']));
 

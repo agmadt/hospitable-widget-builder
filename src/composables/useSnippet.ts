@@ -1,9 +1,9 @@
 import { computed } from 'vue';
 import { config } from '@/config';
 import { buildSnippet } from '@/lib/snippet';
-import { fontLink } from '@/lib/style';
+import { T } from '@/lib/templates';
 import { W } from '@/lib/widget';
-import { attrs, design, needsProperty, previewData, previewOptions, runtime, starter, state, template } from '@/stores/builder';
+import { attrs, design, needsProperty, runtime, snippetOptions, snippetStyle, state, template } from '@/stores/builder';
 
 /** The snippet for the current design, or null until a Worker is connected. */
 export function useSnippet() {
@@ -12,18 +12,17 @@ export function useSnippet() {
     if (!conn || !runtime.ready) return null;
     return buildSnippet({
       hosp: W(),
-      id: `hosp-${state.type}-${design.value.uid}`,
-      name: starter.value.meta.name,
+      type: state.type,
       template: template.value,
-      data: previewData.value,
+      custom: design.value.custom,
+      id: `hosp-${state.type}-${design.value.uid}`,
       worker: conn.worker,
       property: needsProperty.value ? state.property : '',
+      options: snippetOptions.value,
+      style: snippetStyle.value,
       attrs: attrs.value,
-      displayOptions: previewOptions.value,
-      fontHref: fontLink(state.style),
+      fontHref: T().fontHref(state.style),
       widgetSrc,
-      sampleMode: conn.mode === 'dummy',
-      credit: location.origin + location.pathname,
     });
   }
 

@@ -1,25 +1,26 @@
-import type { Dataset, HospWidgets, WidgetData, WidgetModule } from '@/types';
-import { compact, escapeHtml, scriptJson } from './html';
-import { propertyFields } from './sample';
+import type { Dataset, HospWidgets, WidgetModule, WidgetType } from '@/types';
+import { compact, escapeHtml } from './html';
 
 export interface SnippetInput {
-  /** widget.js API, for working out data sets and the smallest snapshot. */
+  /** widget.js API, for working out what the widget needs. */
   hosp: HospWidgets;
-  id: string;
-  name: string;
-  /** The compiled template: style block, base CSS and body, as parsed by the browser. */
+  type: WidgetType;
+  /** The template as the preview renders it (style, CSS and body). */
   template: string;
-  /** The data the preview shows; becomes the fallback snapshot. */
-  data: WidgetData;
+  /** The host's own HTML when they edited it; null for a starter template. */
+  custom: string | null;
+  /** Unique id for a custom template on the page. */
+  id: string;
   worker: string;
   property: string;
+  /** Template options and style the host changed from the defaults. */
+  options: string;
+  style: string;
   /** data-hosp-* display choices, kebab-case keys. */
   attrs: Record<string, string>;
-  displayOptions: Record<string, string>;
+  /** Google Fonts stylesheet, needed only for custom HTML. */
   fontHref: string;
   widgetSrc: string;
-  sampleMode: boolean;
-  credit?: string;
 }
 
 /** What a widget needs: data sets from the Worker and modules next to widget.js. */
@@ -31,70 +32,30 @@ export function needs(hosp: HospWidgets, template: string): { datasets: Dataset[
   return { datasets, modules, requests };
 }
 
+/**
+ * One <div> and one <script>. A starter template is named by type and loads
+ * from next to widget.js; only HTML the host edited by hand rides along in a
+ * <template>.
+ */
 export function buildSnippet(i: SnippetInput): string {
   const { datasets, modules } = needs(i.hosp, i.template);
-  const needsProperty = datasets.some((s) => s !== 'host' && s !== 'properties');
-  const fallback = snapshot(i, datasets);
-  // Saying what the widget needs up front saves widget.js working it out.
-  const attrs = [` data-hosp-data="${datasets.join(',')}" data-hosp-modules="${modules.join(',')}"`]
-    .concat(Object.entries(i.attrs).map(([k, v]) => ` data-hosp-${k}="${escapeHtml(v)}"`))
-    .join('');
-  return [
-    `<!-- Hospitable listing widget: ${i.name}${i.credit ? `. Made with ${i.credit}` : ''} -->`,
-    // Opens the connection to the Worker while widget.js is still loading.
-    `<link rel="preconnect" href="${escapeHtml(i.worker)}" crossorigin>`,
-    i.fontHref ? `<link rel="stylesheet" href="${escapeHtml(i.fontHref)}">` : '',
-    `<template id="${i.id}">`,
-    compact(i.template),
-    `</template>`,
-    `<script type="application/json" id="${i.id}-fallback">${scriptJson(fallback)}</script>`,
-    `<div data-hosp-template="${i.id}" data-hosp-worker="${escapeHtml(i.worker)}"${needsProperty ? ` data-hosp-property="${escapeHtml(i.property)}"` : ''}${attrs}></div>`,
-    `<script src="${escapeHtml(i.widgetSrc)}" defer></script>`,
-  ]
-    .filter(Boolean)
-    .join('\n');
-}
+  const attr = (name: string, value: string) => ` ${name}="${escapeHtml(value)}"`;
+  let div = i.custom === null ? attr('data-hosp', i.type) : attr('data-hosp-template', i.id);
+  div += attr('data-hosp-worker', i.worker);
+  if (datasets.some((s) => s !== 'host' && s !== 'properties')) div += attr('data-hosp-property', i.property);
+  // Saying what the widget needs lets widget.js fetch its data straight away.
+  div += attr('data-hosp-data', datasets.join(',')) + attr('data-hosp-modules', modules.filter((m) => m !== 'templates').join(','));
+  if (i.custom === null && i.options) div += attr('data-hosp-options', i.options);
+  if (i.custom === null && i.style) div += attr('data-hosp-style', i.style);
+  for (const [k, v] of Object.entries(i.attrs)) div += attr(`data-hosp-${k}`, v);
 
-/**
- * The fallback snapshot: today's data, shown when the Worker can't be reached.
- * Only the data sets the template uses, trimmed, then cut down to the fields
- * that actually change what renders.
- */
-export function snapshot(i: Pick<SnippetInput, 'hosp' | 'template' | 'data' | 'attrs' | 'displayOptions' | 'sampleMode'>, datasets: Dataset[]): WidgetData {
-  const d = i.data;
-  const keep: WidgetData = {};
-  const pick = (keys: string[]) => keys.forEach((k) => d[k] !== undefined && (keep[k] = d[k]));
-  const sets = new Set(datasets);
-  if (sets.has('property')) pick([...propertyFields, 'photos', 'updated_at']);
-  if (sets.has('calendar')) {
-    keep.currency = d.currency;
-    // Three months is plenty to fall back on; old availability should not linger.
-    keep.calendar = ((d.calendar as unknown[]) || []).slice(0, 92);
+  const lines = [];
+  if (i.custom !== null) {
+    if (i.fontHref) lines.push(`<link rel="stylesheet" href="${escapeHtml(i.fontHref)}">`);
+    lines.push(`<template id="${i.id}">`, compact(i.template), '</template>');
   }
-  if (sets.has('reviews')) {
-    const ids = String(i.attrs['review-ids'] || '').split(',').filter(Boolean);
-    const all = (d.reviews as { id: string }[]) || [];
-    keep.reviews = ids.length ? all.filter((r) => ids.includes(String(r.id))) : all.slice(0, 24);
-    pick(['rating_average', 'review_count']);
-  }
-  if (sets.has('guide')) pick(['guide']);
-  if (sets.has('host')) pick(['host_name', 'host_picture']);
-  if (sets.has('properties')) pick(['properties']);
-  if (i.sampleMode || d.sample_data) keep.sample_data = true;
-  return minimize(keep, (data) => i.hosp.render(i.template, i.hosp.derive(data, i.displayOptions)));
-}
-
-/** Drops every field whose removal leaves the rendered output unchanged. */
-export function minimize(data: WidgetData, render: (d: WidgetData) => string): WidgetData {
-  const full = render(data);
-  const out: WidgetData = { ...data };
-  for (const key of Object.keys(data)) {
-    if (key === 'sample_data') continue;
-    const without = { ...out };
-    delete without[key];
-    if (render(without) === full) delete out[key];
-  }
-  return out;
+  lines.push(`<div${div}></div>`, `<script src="${escapeHtml(i.widgetSrc)}" defer></script>`);
+  return lines.join('\n');
 }
 
 /** A page that shows the snippet the way a website would. */

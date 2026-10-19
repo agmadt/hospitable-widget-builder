@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { normalizeWorker, connectWorker } from '@/lib/worker';
-import { fontLink, onAccent, styleCss, DEFAULT_STYLE } from '@/lib/style';
+import { DEFAULT_STYLE, changedStyle } from '@/lib/style';
 import { shiftCalendar, sampleData, sampleProperties } from '@/lib/sample';
 import { compact, highlight, scriptJson } from '@/lib/html';
-import { minimize } from '@/lib/snippet';
 
 describe('worker address', () => {
   it('accepts what hosts paste', () => {
@@ -30,17 +29,9 @@ describe('worker address', () => {
 });
 
 describe('style', () => {
-  it('picks readable text on the accent color', () => {
-    expect(onAccent('#0f766e')).toBe('#ffffff');
-    expect(onAccent('#fbbf24')).toBe('#111111');
-  });
-
-  it('writes the --hw-* variables and Google Fonts link', () => {
-    expect(styleCss(DEFAULT_STYLE)).toMatch(/^:host\{--hw-accent:#0f766e;.*--hw-radius:16px;/);
-    expect(fontLink(DEFAULT_STYLE)).toBe('');
-    expect(fontLink({ ...DEFAULT_STYLE, font: 'inter', headingFont: 'lora' })).toBe(
-      'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lora:wght@400;600;700&display=swap',
-    );
+  it('records only what the host changed', () => {
+    expect(changedStyle(DEFAULT_STYLE)).toEqual({});
+    expect(changedStyle({ ...DEFAULT_STYLE, accent: '#c2410c', radius: 4, card: '' })).toEqual({ accent: '#c2410c', radius: '4', card: '' });
   });
 });
 
@@ -68,12 +59,5 @@ describe('html helpers', () => {
   it('compacts and highlights', () => {
     expect(compact('  <a>\n\n   <b>  \n')).toBe('<a>\n<b>');
     expect(highlight('<div data-x="1">{name}</div>')).toContain('<span class="p">{name}</span>');
-  });
-});
-
-describe('snapshot minimizing', () => {
-  it('keeps only fields that change the output', () => {
-    const render = (d: Record<string, unknown>) => `${d.a ?? ''}|${d.b ?? ''}`;
-    expect(minimize({ a: 1, b: 2, c: 3, sample_data: true }, render)).toEqual({ a: 1, b: 2, sample_data: true });
   });
 });

@@ -2,9 +2,9 @@
 import { computed, watchEffect } from 'vue';
 import WidgetPreview from './WidgetPreview.vue';
 import type { Device } from '@/types';
-import { fontLink } from '@/lib/style';
 import { sampleProperties } from '@/lib/sample';
 import { previewData, previewOptions, runtime, selectedProperty, state, template } from '@/stores/builder';
+import { T } from '@/lib/templates';
 
 const DEVICES: { id: Device; label: string; icon: string }[] = [
   { id: 'desktop', label: 'Desktop', icon: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>' },
@@ -15,15 +15,8 @@ const DEVICES: { id: Device; label: string; icon: string }[] = [
 const previewState = computed(() => runtime.source);
 
 // Web fonts live in the document: a font declared inside a shadow root isn't applied.
-const loadedFonts = new Set<string>();
 watchEffect(() => {
-  const href = fontLink(state.style);
-  if (!href || loadedFonts.has(href)) return;
-  loadedFonts.add(href);
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = href;
-  document.head.appendChild(link);
+  if (runtime.ready) T().useFonts({ ...state.style });
 });
 </script>
 

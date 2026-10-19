@@ -11,7 +11,8 @@ const emit = defineEmits<{ 'update:modelValue': [string] }>();
 const id = computed(() => `o-${props.option.key}`);
 const value = computed({
   get: () => props.modelValue,
-  set: (v: string) => emit('update:modelValue', v),
+  // A number input hands over a number; options are stored as text.
+  set: (v: string | number) => emit('update:modelValue', String(v)),
 });
 const checked = computed({
   get: () => isOn(props.modelValue),
