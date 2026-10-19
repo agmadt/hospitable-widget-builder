@@ -1,9 +1,0 @@
-{
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  // The builder: static files only, served at hospitable-widget.adhityoagam.com.
-  // With no Worker script, every request is a static asset request, which
-  // Cloudflare serves free and without a request limit.
-  "name": "hospitable-widget-builder",
-  "compatibility_date": "2026-10-15",
-  "assets": { "directory": "./dist" }
-}

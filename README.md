@@ -19,7 +19,6 @@ For the Connect step, run the kit's Worker in dummy mode alongside (`npm run dev
 | --- | --- |
 | `npm run dev` | Dev server with hot reload |
 | `npm run build` | Type-check, then build to `dist/` |
-| `npm run deploy` | Deploy `dist/` to Cloudflare (run `npm run build` first) |
 | `npm test` | Unit and component tests (Vitest, happy-dom) |
 | `npm run typecheck` | `vue-tsc` |
 | `npm run e2e` | Every widget type in real Chrome: the copied snippet must render exactly like the preview, with the Worker up and with it unreachable. Needs both dev servers; set `CHROME_PATH` if Chrome isn't in the default macOS location. |
@@ -39,9 +38,15 @@ The kit's `BUILDER_URL` (in its `wrangler.jsonc`) points at `https://hospitable-
 
 ## Hosting
 
-The builder is a Cloudflare Worker with static files only (`hospitable-widget-builder`, see `wrangler.jsonc`), built and deployed by Cloudflare from this repo: build command `npm run build`, deploy command `npx wrangler deploy`. It has no Worker script, so every request is a static asset request, which Cloudflare serves free and without a request limit.
+Cloudflare Pages builds and serves the builder from this repo at `hospitable-widget.adhityoagam.com`. Pages project settings:
 
-The custom domain `hospitable-widget.adhityoagam.com` is set in the Cloudflare dashboard (Workers & Pages → `hospitable-widget-builder` → Settings → Domains & Routes). If the builder moves, update the kit's `BUILDER_URL` too.
+| Setting | Value |
+| --- | --- |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Environment variable | `NODE_VERSION` = `22` |
+
+Every push to `main` deploys. If the builder moves, update the kit's `BUILDER_URL` too.
 
 ## Layout
 
