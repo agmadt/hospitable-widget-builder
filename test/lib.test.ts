@@ -36,6 +36,9 @@ describe('style', () => {
   it('records only what the host changed', () => {
     expect(changedStyle(DEFAULT_STYLE)).toEqual({});
     expect(changedStyle({ ...DEFAULT_STYLE, accent: '#c2410c', radius: 4, card: '' })).toEqual({ accent: '#c2410c', radius: '4', card: '' });
+    // The website's own font and typed Google fonts go in the snippet like any other choice.
+    expect(changedStyle({ ...DEFAULT_STYLE, font: 'site' })).toEqual({ font: 'site' });
+    expect(changedStyle({ ...DEFAULT_STYLE, font: 'google:Playfair Display', headingFont: 'google:Lora' })).toEqual({ font: 'google:Playfair Display', headingFont: 'google:Lora' });
   });
 });
 

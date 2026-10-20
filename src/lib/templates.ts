@@ -7,8 +7,8 @@ import type { StarterTemplate, TemplateMeta, WidgetType } from '@/types';
 import { WIDGET_TYPES } from './catalog';
 import { W } from './widget';
 
-/** [label, CSS font stack, Google Fonts family] */
-type Font = [string, string, string?];
+/** [label, CSS font stack (null: the website's own), Google Fonts family] */
+type Font = [string, string | null, string?];
 
 export interface TemplatesModule {
   FONTS: Record<string, Font>;

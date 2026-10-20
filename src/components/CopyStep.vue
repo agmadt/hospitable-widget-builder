@@ -102,6 +102,12 @@ function download() {
         <button v-for="p in PLATFORMS" :key="p.id" role="tab" type="button" :aria-selected="p.id === state.platform" @click="state.platform = p.id">{{ p.label }}</button>
       </div>
       <ol class="guide-body"><li v-for="s in platform.steps" :key="s" v-html="s" /></ol>
+      <Callout v-if="state.platform === 'wix' && state.style.font === 'site'" kind="warn" title="Wix can't share your site's font">
+        <p>
+          A Wix embed is a separate little page, so a widget set to “Same as my website” shows the browser's default font there.
+          Go back to <button class="link" type="button" @click="state.step = 'design'">Design</button> and pick your site's font under Style.
+        </p>
+      </Callout>
     </div>
     <p class="hint">Changed your design later? Come back, adjust it, and copy a new snippet. Changes to your listing in Hospitable reach your website on their own: your Worker picks them up within an hour<template v-if="runtime.connection?.cacheMinutes">, and visitors who already saw the widget get them within {{ cacheDuration(runtime.connection.cacheMinutes) }} after that</template>.</p>
   </section>
