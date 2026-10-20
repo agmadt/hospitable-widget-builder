@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { normalizeWorker, connectWorker } from '@/lib/worker';
+import { normalizeWorker, connectWorker, cachePeriod } from '@/lib/worker';
 import { DEFAULT_STYLE, changedStyle } from '@/lib/style';
 import { shiftCalendar, sampleData, sampleProperties } from '@/lib/sample';
 import { compact, highlight, scriptJson } from '@/lib/html';
@@ -16,7 +16,10 @@ describe('worker address', () => {
 
   it('reads properties, token problems and dead addresses', async () => {
     const ok = vi.fn(async () => new Response(JSON.stringify({ mode: 'live', properties: [{ id: 'p1' }], status: { token: 'ok' } })));
-    expect(await connectWorker('https://w.dev', ok)).toMatchObject({ ok: true, connection: { worker: 'https://w.dev', mode: 'live' } });
+    expect(await connectWorker('https://w.dev', ok)).toMatchObject({ ok: true, connection: { worker: 'https://w.dev', mode: 'live', cacheMinutes: 60 } });
+    const quick = vi.fn(async () => new Response(JSON.stringify({ mode: 'live', properties: [], cache_minutes: 15 })));
+    expect(await connectWorker('https://w.dev', quick)).toMatchObject({ ok: true, connection: { cacheMinutes: 15 } });
+    expect([0, 1, 15, 60, 120].map(cachePeriod)).toEqual(['per page view', 'per minute', 'every 15 minutes', 'per hour', 'every 2 hours']);
     const rejected = vi.fn(async () => new Response(JSON.stringify({ error: 'unavailable', token: 'rejected' }), { status: 503 }));
     expect(await connectWorker('https://w.dev', rejected)).toEqual({ ok: false, reason: 'token', token: 'rejected' });
     const dead = vi.fn(async () => {

@@ -118,6 +118,8 @@ export interface Connection {
   mode: 'live' | 'dummy';
   properties: PropertySummary[];
   status: WorkerStatus | null;
+  /** How long visitors' browsers keep the data (the Worker's CACHE_MINUTES). */
+  cacheMinutes: number;
 }
 
 export type PreviewSource = 'sample' | 'dummy' | 'live';

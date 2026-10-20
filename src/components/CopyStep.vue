@@ -6,6 +6,7 @@ import { highlight } from '@/lib/html';
 import { copyText } from '@/lib/clipboard';
 import { testPage } from '@/lib/snippet';
 import { PLATFORMS } from '@/lib/catalog';
+import { cachePeriod } from '@/lib/worker';
 import { config } from '@/config';
 import { body, design, runtime, state } from '@/stores/builder';
 import { useWeight } from '@/composables/useWeight';
@@ -82,7 +83,7 @@ function download() {
         </div>
         <div>
           <b>{{ weight.requests }}</b>
-          <span>request{{ weight.requests === 1 ? '' : 's' }} to your Worker per visitor per hour</span>
+          <span>request{{ weight.requests === 1 ? '' : 's' }} to your Worker per visitor {{ cachePeriod(runtime.connection.cacheMinutes) }}</span>
           <small>shared with your other widgets for this property</small>
         </div>
       </div>

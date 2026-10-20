@@ -26,6 +26,7 @@ interface PropertiesResponse {
   properties?: PropertySummary[];
   status?: WorkerStatus | null;
   token?: TokenState;
+  cache_minutes?: number;
 }
 
 /** Asks a Worker for its properties and token status. Never throws. */
@@ -40,7 +41,17 @@ export async function connectWorker(worker: string, fetchImpl: typeof fetch = fe
   }
   if (res.status === 503) return { ok: false, reason: 'token', token: body.token ?? 'unknown' };
   if (!res.ok || !Array.isArray(body.properties)) return { ok: false, reason: 'not-a-worker', status: res.status };
-  return { ok: true, connection: { worker, mode: body.mode === 'dummy' ? 'dummy' : 'live', properties: body.properties, status: body.status ?? null } };
+  // Workers from before CACHE_MINUTES keep data for an hour.
+  const cacheMinutes = typeof body.cache_minutes === 'number' ? body.cache_minutes : 60;
+  return { ok: true, connection: { worker, mode: body.mode === 'dummy' ? 'dummy' : 'live', properties: body.properties, status: body.status ?? null, cacheMinutes } };
+}
+
+/** "per hour", "every 15 minutes", "per page view": how often a visitor costs a request. */
+export function cachePeriod(minutes: number): string {
+  if (minutes <= 0) return 'per page view';
+  if (minutes === 60) return 'per hour';
+  if (minutes % 60 === 0) return `every ${minutes / 60} hours`;
+  return minutes === 1 ? 'per minute' : `every ${minutes} minutes`;
 }
 
 export const TOKEN_HELP: Record<TokenState, { title: string; text: string; fix?: string[] }> = {
