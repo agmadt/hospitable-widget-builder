@@ -15,6 +15,8 @@ The builder takes you through four steps, shown at the top of the page.
 3. Connect. Open your Worker's address and the builder connects to it. Pick one of your properties, and the preview switches to your real listing.
 4. Copy. Copy the snippet, two lines of code, and paste it into your website. The builder shows where it goes on Wix, Squarespace, WordPress, Webflow and other sites, suggests a height for Wix embeds, and can open the widget on a test page first.
 
+You can try every step before you have any account: in the Deploy or Connect step, click Use the demo Worker. It connects the builder to a Worker that runs on sample data.
+
 To change a widget later, come back, adjust it and copy a new snippet to replace the old one. Changes you make to your listing in Hospitable reach your website on their own.
 
 ## Your token and your data
