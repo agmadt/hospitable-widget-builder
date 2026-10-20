@@ -41,7 +41,7 @@ export async function connectWorker(worker: string, fetchImpl: typeof fetch = fe
   }
   if (res.status === 503) return { ok: false, reason: 'token', token: body.token ?? 'unknown' };
   if (!res.ok || !Array.isArray(body.properties)) return { ok: false, reason: 'not-a-worker', status: res.status };
-  // Workers from before CACHE_MINUTES keep data for an hour.
+  // Workers from before CACHE_MINUTES (kit 1.1.1 and older) let browsers keep data for an hour.
   const cacheMinutes = typeof body.cache_minutes === 'number' ? body.cache_minutes : 60;
   return { ok: true, connection: { worker, mode: body.mode === 'dummy' ? 'dummy' : 'live', properties: body.properties, status: body.status ?? null, cacheMinutes } };
 }
@@ -52,6 +52,12 @@ export function cachePeriod(minutes: number): string {
   if (minutes === 60) return 'per hour';
   if (minutes % 60 === 0) return `every ${minutes / 60} hours`;
   return minutes === 1 ? 'per minute' : `every ${minutes} minutes`;
+}
+
+/** "4 hours", "15 minutes", "1 hour": how long visitors' browsers keep the data. */
+export function cacheDuration(minutes: number): string {
+  if (minutes % 60 === 0) return minutes === 60 ? '1 hour' : `${minutes / 60} hours`;
+  return minutes === 1 ? '1 minute' : `${minutes} minutes`;
 }
 
 export const TOKEN_HELP: Record<TokenState, { title: string; text: string; fix?: string[] }> = {

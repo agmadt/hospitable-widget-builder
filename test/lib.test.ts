@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { normalizeWorker, connectWorker, cachePeriod } from '@/lib/worker';
+import { normalizeWorker, connectWorker, cacheDuration, cachePeriod } from '@/lib/worker';
 import { DEFAULT_STYLE, changedStyle } from '@/lib/style';
 import { shiftCalendar, sampleData, sampleProperties } from '@/lib/sample';
 import { compact, highlight, scriptJson } from '@/lib/html';
@@ -20,6 +20,7 @@ describe('worker address', () => {
     const quick = vi.fn(async () => new Response(JSON.stringify({ mode: 'live', properties: [], cache_minutes: 15 })));
     expect(await connectWorker('https://w.dev', quick)).toMatchObject({ ok: true, connection: { cacheMinutes: 15 } });
     expect([0, 1, 15, 60, 120].map(cachePeriod)).toEqual(['per page view', 'per minute', 'every 15 minutes', 'per hour', 'every 2 hours']);
+    expect([1, 15, 60, 240].map(cacheDuration)).toEqual(['1 minute', '15 minutes', '1 hour', '4 hours']);
     const rejected = vi.fn(async () => new Response(JSON.stringify({ error: 'unavailable', token: 'rejected' }), { status: 503 }));
     expect(await connectWorker('https://w.dev', rejected)).toEqual({ ok: false, reason: 'token', token: 'rejected' });
     const dead = vi.fn(async () => {

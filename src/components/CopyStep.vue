@@ -6,7 +6,7 @@ import { highlight } from '@/lib/html';
 import { copyText } from '@/lib/clipboard';
 import { testPage } from '@/lib/snippet';
 import { PLATFORMS } from '@/lib/catalog';
-import { cachePeriod } from '@/lib/worker';
+import { cacheDuration, cachePeriod } from '@/lib/worker';
 import { config } from '@/config';
 import { body, design, runtime, state } from '@/stores/builder';
 import { useWeight } from '@/composables/useWeight';
@@ -103,7 +103,7 @@ function download() {
       </div>
       <ol class="guide-body"><li v-for="s in platform.steps" :key="s" v-html="s" /></ol>
     </div>
-    <p class="hint">Changed your design later? Come back, adjust it, and copy a new snippet. Changes to your listing in Hospitable show up on their own within an hour.</p>
+    <p class="hint">Changed your design later? Come back, adjust it, and copy a new snippet. Changes to your listing in Hospitable reach your website on their own: your Worker picks them up within an hour<template v-if="runtime.connection?.cacheMinutes">, and visitors who already saw the widget get them within {{ cacheDuration(runtime.connection.cacheMinutes) }} after that</template>.</p>
   </section>
 </template>
 
