@@ -18,11 +18,12 @@ async function tryDemo() {
       <li>
         <h3>Get a Hospitable token</h3>
         <p>In Hospitable, go to <b>Apps → API access → Access tokens</b> and add a new token with <b>Read</b> permission. Copy it.</p>
-        <p class="hint">Just trying things out? Type <code>dummy</code> instead of a token and everything runs on sample data.</p>
+        <p class="hint">Just trying things out? On Cloudflare's page, type <code>dummy</code> instead of a token and everything runs on sample data.</p>
       </li>
       <li>
         <h3>Click Deploy to Cloudflare</h3>
-        <p>Sign in to Cloudflare and GitHub (both accept Google sign-in), paste your token into <b>HOSPITABLE_PAT</b>, and deploy. It takes about a minute.</p>
+        <p>The button opens Cloudflare's own website (<code>dash.cloudflare.com</code>) in a new tab. Sign in to Cloudflare and GitHub there (both accept Google sign-in), paste your token into the field named <b>HOSPITABLE_PAT</b> on that page, and deploy. It takes about a minute.</p>
+        <p class="hint">That Cloudflare page is the only place your token goes. This builder never asks for it and never sees it.</p>
         <a class="deploy" :href="config.deployUrl" target="_blank" rel="noopener">
           <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare" width="200" height="36">
         </a>
