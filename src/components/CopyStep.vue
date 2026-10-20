@@ -8,7 +8,7 @@ import { testPage } from '@/lib/snippet';
 import { PLATFORMS } from '@/lib/catalog';
 import { cacheDuration, cachePeriod } from '@/lib/worker';
 import { config } from '@/config';
-import { body, design, runtime, state } from '@/stores/builder';
+import { body, design, onDemo, runtime, state, tryDemo } from '@/stores/builder';
 import { useWeight } from '@/composables/useWeight';
 
 const { snippet, build } = useSnippet();
@@ -58,7 +58,7 @@ function download() {
       <p>
         The snippet loads data from your own Worker, so it needs its address.
         <button class="link" type="button" @click="state.step = 'deploy'">Deploy one</button> or
-        <button class="link" type="button" @click="state.step = 'connect'">connect it</button>.
+        <button class="link" type="button" @click="state.step = 'connect'">connect it</button><template v-if="config.demoWorker">, or <button class="link" type="button" @click="tryDemo">use the demo Worker</button> to see how it works</template>.
       </p>
     </Callout>
 
@@ -92,7 +92,8 @@ function download() {
         <template v-if="design.custom === null">One element and one script: the design loads from jsDelivr, the data from your Worker.</template>
         <template v-else>{{ size }} KB: your own HTML travels in the snippet.</template>
         Visitors' browsers keep the last data, so returning visitors still see the widget if your Worker can't be reached.
-        <template v-if="runtime.connection.mode === 'dummy'">This snippet shows sample data until your Worker has a real token.</template>
+        <template v-if="onDemo">You're connected to the demo Worker, so this snippet shows sample data. Deploy your own Worker to show your listings.</template>
+        <template v-else-if="runtime.connection.mode === 'dummy'">This snippet shows sample data until your Worker has a real token.</template>
       </p>
     </div>
 

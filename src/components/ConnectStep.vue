@@ -2,7 +2,8 @@
 import { computed, ref, watch } from 'vue';
 import Callout from './ui/Callout.vue';
 import { TOKEN_HELP, normalizeWorker } from '@/lib/worker';
-import { connect, needsProperty, runtime, state } from '@/stores/builder';
+import { connect, needsProperty, runtime, state, tryDemo } from '@/stores/builder';
+import { config } from '@/config';
 import { useToast } from '@/composables/useToast';
 import { W } from '@/lib/widget';
 import type { PropertySummary } from '@/types';
@@ -54,6 +55,7 @@ function price(p: PropertySummary) {
         <button class="btn primary" type="submit" :disabled="runtime.connecting">{{ runtime.connecting ? 'Connecting…' : 'Connect' }}</button>
       </div>
     </form>
+    <p v-if="config.demoWorker && !runtime.connection" class="muted small">No Worker yet? <button class="link" type="button" @click="tryDemo">Use the demo Worker</button> to try this step with sample data.</p>
 
     <Callout v-if="invalid" kind="warn">That doesn't look like a web address. It should look like <code>https://hospitable-widgets.you.workers.dev</code>.</Callout>
 

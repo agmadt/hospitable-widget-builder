@@ -10,6 +10,7 @@ import { asParsed } from '@/lib/html';
 import { sampleData, sampleProperties } from '@/lib/sample';
 import { connectWorker, normalizeWorker, type ConnectResult } from '@/lib/worker';
 import { W } from '@/lib/widget';
+import { config } from '@/config';
 
 export const STORE_KEY = 'hw-builder-v1';
 
@@ -129,6 +130,14 @@ export function applyPreset(index: number) {
 }
 
 // --- Connection ------------------------------------------------------------------------
+
+/** The public demo Worker (sample data): every step works without deploying anything. */
+export async function tryDemo() {
+  state.step = 'connect';
+  await connect(config.demoWorker);
+}
+
+export const onDemo = computed(() => !!config.demoWorker && runtime.connection?.worker === normalizeWorker(config.demoWorker));
 
 export async function connect(input: string): Promise<ConnectResult | null> {
   const worker = normalizeWorker(input);

@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { config } from '@/config';
-import { connect, state } from '@/stores/builder';
-
-async function tryDemo() {
-  state.step = 'connect';
-  await connect(config.demoWorker);
-}
+import { state, tryDemo } from '@/stores/builder';
 </script>
 
 <template>
@@ -13,6 +8,7 @@ async function tryDemo() {
     <div class="pane-head">
       <h1>Deploy your Worker</h1>
       <p>Your Worker is a tiny program in your own free Cloudflare account. It keeps your Hospitable token private and refreshes your listing data every hour.</p>
+      <p v-if="config.demoWorker" class="hint">Just looking around? <button class="link" type="button" @click="tryDemo">Use the demo Worker</button> to try the next steps with sample data, without deploying anything.</p>
     </div>
     <ol class="howto">
       <li>
