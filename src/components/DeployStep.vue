@@ -31,8 +31,7 @@ import { state, tryDemo } from '@/stores/builder';
       </li>
     </ol>
     <div class="callout">
-      <b>Already deployed?</b>
-      <button class="link" type="button" @click="state.step = 'connect'">Paste your Worker's address</button>
+      <b>Already deployed?</b> <button class="link" type="button" @click="state.step = 'connect'">Paste your Worker's address</button>
       <template v-if="config.demoWorker">
         <span class="sep">·</span>
         <button class="link" type="button" @click="tryDemo">Try the demo Worker</button>
