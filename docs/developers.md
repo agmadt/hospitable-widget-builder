@@ -47,7 +47,7 @@ Cloudflare Pages builds and serves the builder from this repo at `hospitable-wid
 | Build output directory | `dist` |
 | Environment variable | `NODE_VERSION` = `22` |
 
-Every push to `main` deploys. If the builder moves, update the kit's `BUILDER_URL` too.
+Every push to `main` deploys. If the builder moves, update the kit's `BUILDER_URL` too. A host who runs their own copy sets `BUILDER_URL` in their Worker copy's `wrangler.jsonc` instead (it's a deploy-page value, and every deploy sends that file's value to Cloudflare); the README's [Run your own builder](../README.md#run-your-own-builder) walks them through it.
 
 ## Layout
 
@@ -71,3 +71,7 @@ src/
 ## Templates
 
 The starter templates live in the kit, in [`widget/templates/`](https://github.com/agmadt/hospitable-widgets/tree/main/widget/templates), and load through its `templates` module. The builder uses that module too, so the preview renders exactly what a website will. Their format is described in the kit's [developer guide](https://github.com/agmadt/hospitable-widgets/blob/main/docs/developers.md#starter-templates).
+
+## Presets
+
+The ready-made styles in the Design step are the `PRESETS` list in `src/lib/style.ts`. Each sets `accent`, `text` and `background` (hex colors), `font` and `headingFont`, `card` (`card-border`, `card-shadow` or `''` for none) and `radius` in px. A font is a key of the kit's `FONTS` (such as `system`, `inter` or `lora`), `google:Name` for any Google font, or `site` for the website's own font; `headingFont` can't be `site`, and `same` follows `font`. A preset only fills in the style fields: the snippet carries the resulting values in `data-hosp-style`, so a new preset needs no kit release.
