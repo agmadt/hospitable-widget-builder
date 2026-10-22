@@ -68,6 +68,11 @@ function download() {
         <button class="btn ghost" type="button" title="Opens the snippet on its own page, as a website would show it" @click="openTest">Open test page</button>
         <button class="btn ghost" type="button" @click="download">Download .html</button>
       </div>
+      <!-- A link, not window.open: the tab opens even where popups are blocked, and the copy starts while this page still has focus. -->
+      <p class="muted small tester">
+        Want a closer look? <a class="link" :href="config.embedTester" target="_blank" rel="noopener" @click="copy">Check it in the Embed Code Tester</a>.
+        The link copies your snippet: paste it there and click Run Code to see everything it loads and whether anything fails.
+      </p>
       <div v-if="runtime.heights" class="height-tip">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4" /></svg>
         <span>
@@ -115,6 +120,7 @@ function download() {
 </template>
 
 <style scoped>
+.tester { margin: 10px 0 0; }
 .weight { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .weight > div { padding: 10px 12px; border-radius: 10px; background: var(--line-2); display: grid; gap: 1px; }
 .weight b { font-size: 18px; letter-spacing: -.01em; }

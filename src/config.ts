@@ -16,4 +16,6 @@ export const config = {
   /** widget.js in the snippets hosts paste into their websites. */
   snippetWidgetSrc: released,
   demoWorker: import.meta.env.VITE_DEMO_WORKER || '',
+  /** Runs a pasted snippet in a sandboxed frame and lists what it loads, logs and fails on. */
+  embedTester: 'https://webdevutility.com/embed-code-tester/',
 };
