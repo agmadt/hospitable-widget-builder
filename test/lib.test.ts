@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { normalizeWorker, connectWorker, cacheDuration, cachePeriod } from '@/lib/worker';
 import { DEFAULT_STYLE, changedStyle } from '@/lib/style';
-import { shiftCalendar, sampleData, sampleProperties } from '@/lib/sample';
+import { shiftCalendar, sampleData, sampleProperties, sampleStay } from '@/lib/sample';
 import { compact, highlight, scriptJson } from '@/lib/html';
 
 describe('worker address', () => {
@@ -27,6 +27,11 @@ describe('worker address', () => {
       throw new TypeError('Failed to fetch');
     });
     expect(await connectWorker('https://w.dev', dead)).toEqual({ ok: false, reason: 'unreachable' });
+    // Kit 1.3 says whether guests can sign in; older Workers don't.
+    const guest = { on: false, missing: ['GUEST_SECRET'], sites: ['https://villakayu.com'], reveal_hours: 24 };
+    const withGuest = vi.fn(async () => new Response(JSON.stringify({ mode: 'live', properties: [], guest })));
+    expect(await connectWorker('https://w.dev', withGuest)).toMatchObject({ ok: true, connection: { guest } });
+    expect(await connectWorker('https://w.dev', ok)).toMatchObject({ ok: true, connection: { guest: null } });
     const other = vi.fn(async () => new Response('{"hello":1}'));
     expect(await connectWorker('https://w.dev', other)).toEqual({ ok: false, reason: 'not-a-worker', status: 200 });
   });
@@ -47,6 +52,17 @@ describe('sample data', () => {
     const days = [{ date: '2026-01-01', available: true, price: 1, min_stay: 1 }, { date: '2026-01-02', available: false, price: null, min_stay: 1 }];
     const out = shiftCalendar(days, new Date(2026, 4, 10));
     expect(out.map((d) => d.date)).toEqual(['2026-05-10', '2026-05-11']);
+  });
+
+  it('has a signed-in guest’s stay, moved to today like the calendar', () => {
+    expect(sampleStay('out')).toEqual({ signed_in: false, sample_data: true });
+    const today = sampleStay('arrival', new Date(2027, 2, 1));
+    const later = sampleStay('arrival', new Date(2027, 2, 11));
+    expect(today).toMatchObject({ signed_in: true, stay_phase: 'arrival', stay_door_code: expect.any(String), sample_data: true });
+    const days = (a: unknown, b: unknown) => (Date.parse(String(b)) - Date.parse(String(a))) / 86_400_000;
+    expect(days(today.stay_arrival_date, later.stay_arrival_date)).toBe(10);
+    expect(days(today.stay_arrival_date, today.stay_departure_date)).toBe(4);
+    expect(sampleStay('early')).toMatchObject({ stay_phase: 'upcoming', stay_door_code: null, stay_access_open: false });
   });
 
   it('merges only the data sets asked for', () => {

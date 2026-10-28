@@ -28,7 +28,7 @@ export function needs(hosp: HospWidgets, template: string): { datasets: Dataset[
   const datasets = hosp.analyze(template).datasets;
   const modules = hosp.plan(template, datasets);
   // widget.js folds every per-property set into one request (?include=).
-  const requests = (datasets.includes('property') || datasets.includes('host') ? 1 : 0) + (datasets.includes('properties') ? 1 : 0);
+  const requests = (datasets.includes('property') || datasets.includes('host') ? 1 : 0) + (datasets.includes('properties') ? 1 : 0) + (datasets.includes('stay') ? 1 : 0);
   return { datasets, modules, requests };
 }
 
@@ -56,6 +56,38 @@ export function buildSnippet(i: SnippetInput): string {
   }
   lines.push(`<div${div}></div>`, `<script src="${escapeHtml(i.widgetSrc)}" defer></script>`);
   return lines.join('\n');
+}
+
+export interface EmbedInput {
+  hosp: HospWidgets;
+  type: WidgetType;
+  template: string;
+  worker: string;
+  property: string;
+  options: string;
+  style: string;
+  attrs: Record<string, string>;
+}
+
+/**
+ * The Worker's page for one widget (kit 1.3+), for an iframe: the same
+ * choices a snippet carries, as the query. Hand-edited HTML can't travel in it.
+ */
+export function embedUrl(i: EmbedInput): string {
+  const { datasets, modules } = needs(i.hosp, i.template);
+  const q = new URLSearchParams();
+  if (i.property && datasets.some((s) => s !== 'host' && s !== 'properties' && s !== 'stay')) q.set('property', i.property);
+  q.set('data', datasets.join(','));
+  q.set('modules', modules.filter((m) => m !== 'templates').join(','));
+  if (i.options) q.set('options', i.options);
+  if (i.style) q.set('style', i.style);
+  for (const [k, v] of Object.entries(i.attrs)) q.set(k, v);
+  return `${i.worker}/embed/${i.type}?${q}`;
+}
+
+/** An iframe of the embed page, at the height the preview measured. Copy buttons need clipboard-write. */
+export function iframeCode(src: string, title: string, height: number): string {
+  return `<iframe src="${escapeHtml(src)}" title="${escapeHtml(title)}" loading="lazy" allow="clipboard-write" style="display:block;width:100%;height:${Math.round(height)}px;border:0"></iframe>`;
 }
 
 /** A page that shows the snippet the way a website would. */

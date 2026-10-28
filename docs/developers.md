@@ -21,8 +21,8 @@ For the Connect step, run the kit's Worker in dummy mode alongside (`npm run dev
 | `npm run build` | Type-check, then build to `dist/` |
 | `npm test` | Unit and component tests (Vitest, happy-dom) |
 | `npm run typecheck` | `vue-tsc` |
-| `npm run e2e` | Every widget type in real Chrome: the copied snippet must render exactly like the preview, then again from the browser's copy with the Worker blocked; plus a designed widget (preset, fonts, options) and a first visit with the Worker down. Needs both dev servers; set `CHROME_PATH` if Chrome isn't in the default macOS location. |
-| `npm run sync-sample` | Refresh `src/assets/dummy.json` from a dummy-mode Worker |
+| `npm run e2e` | Every widget type in real Chrome: the copied snippet must render exactly like the preview, then again from the browser's copy with the Worker blocked; plus a designed widget (preset, fonts, options), a first visit with the Worker down, and the 8 guest widgets as iframes on a page of another site, filled by one sign-in. Needs both dev servers, with the Worker's `WIDGET_URL` on the builder's `/hosp/widget.js` (`node dev.mjs` in the workspace does it); set `CHROME_PATH` if Chrome isn't in the default macOS location. |
+| `npm run sync-sample` | Refresh `src/assets/dummy.json` from a dummy-mode Worker, including two signed-in sample stays |
 
 ## Settings
 
@@ -59,12 +59,12 @@ src/
   composables/            useSnippet, useWeight (JavaScript + Worker requests per widget), useToast
   lib/
     templates.ts          starter templates (from the kit) and which options go in the snippet
-    snippet.ts            the one-line snippet (or a <template> for hand-edited HTML), the test page
+    snippet.ts            the one-line snippet (or a <template> for hand-edited HTML), the embed link and iframe, the test page
     style.ts              presets, and which style choices go in the snippet
-    sample.ts             sample data for the preview
+    sample.ts             sample data for the preview, and a guest's sample stay
     worker.ts             connecting to a Worker, token help texts
     widget.ts             loading widget.js
-    catalog.ts            the 16 widget types, per-platform paste steps
+    catalog.ts            the 24 widget types (8 for signed-in guests), per-platform paste steps for snippets and iframes
   assets/dummy.json       sample data (npm run sync-sample)
 ```
 

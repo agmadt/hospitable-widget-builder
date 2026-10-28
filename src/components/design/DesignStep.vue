@@ -3,7 +3,7 @@ import TypePicker from './TypePicker.vue';
 import StylePanel from './StylePanel.vue';
 import OptionsPanel from './OptionsPanel.vue';
 import HtmlEditor from './HtmlEditor.vue';
-import { state } from '@/stores/builder';
+import { guestWidget, state } from '@/stores/builder';
 </script>
 
 <template>
@@ -21,7 +21,8 @@ import { state } from '@/stores/builder';
       <summary><h2>Options</h2></summary>
       <OptionsPanel />
     </details>
-    <HtmlEditor />
+    <HtmlEditor v-if="!guestWidget" />
+    <p v-else class="hint">Widgets for signed-in guests run on your Worker's own page, so their HTML can't be edited here; the options and style above go with them.</p>
     <div class="pane-foot">
       <button class="btn primary" type="button" @click="state.step = 'deploy'">Next: deploy your Worker <span aria-hidden="true">→</span></button>
     </div>

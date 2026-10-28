@@ -1,4 +1,4 @@
-import type { Connection, PropertySummary, TokenState, WorkerStatus } from '@/types';
+import type { Connection, GuestStatus, PropertySummary, TokenState, WorkerStatus } from '@/types';
 
 /** "my-worker.me.workers.dev/anything" → "https://my-worker.me.workers.dev". Empty when it isn't an address. */
 export function normalizeWorker(input: string): string {
@@ -27,6 +27,7 @@ interface PropertiesResponse {
   status?: WorkerStatus | null;
   token?: TokenState;
   cache_minutes?: number;
+  guest?: GuestStatus;
 }
 
 /** Asks a Worker for its properties and token status. Never throws. */
@@ -43,7 +44,7 @@ export async function connectWorker(worker: string, fetchImpl: typeof fetch = fe
   if (!res.ok || !Array.isArray(body.properties)) return { ok: false, reason: 'not-a-worker', status: res.status };
   // Workers from before CACHE_MINUTES (kit 1.1.1 and older) let browsers keep data for an hour.
   const cacheMinutes = typeof body.cache_minutes === 'number' ? body.cache_minutes : 60;
-  return { ok: true, connection: { worker, mode: body.mode === 'dummy' ? 'dummy' : 'live', properties: body.properties, status: body.status ?? null, cacheMinutes } };
+  return { ok: true, connection: { worker, mode: body.mode === 'dummy' ? 'dummy' : 'live', properties: body.properties, status: body.status ?? null, cacheMinutes, guest: body.guest ?? null } };
 }
 
 /** "per hour", "every 15 minutes", "per page view": how often a visitor costs a request. */

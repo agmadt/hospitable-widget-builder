@@ -3,7 +3,8 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { DisplayOptions, WidgetData } from '@/types';
 import { W } from '@/lib/widget';
 
-const props = defineProps<{ template: string; data: WidgetData; options: DisplayOptions; state: string; ready: boolean }>();
+// `measureData` sizes the embed when it differs from what's shown: a guest widget is measured signed in.
+const props = defineProps<{ template: string; data: WidgetData; measureData?: WidgetData; options: DisplayOptions; state: string; ready: boolean }>();
 const emit = defineEmits<{ heights: [{ desktop: number; mobile: number }] }>();
 
 const el = ref<HTMLElement>();
@@ -26,7 +27,7 @@ function measure() {
     const probe = document.createElement('div');
     probe.style.width = `${width}px`;
     box.appendChild(probe);
-    W().renderTo(probe, props.template, props.data, props.options, 'measure');
+    W().renderTo(probe, props.template, props.measureData ?? props.data, props.options, 'measure');
     heights[name] = Math.ceil((probe.getBoundingClientRect().height + 16) / 10) * 10;
     probe.remove();
   }

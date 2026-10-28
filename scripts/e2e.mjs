@@ -4,8 +4,11 @@
 //   3. the snippet runs on a page of its own, like a website,
 //   4. the result must match the builder's preview, with no raw {tags},
 //   5. a second visit with the Worker blocked shows the browser's last copy.
+// Then the widgets for signed-in guests, as iframes from the Worker on a page
+// of another site: one sign-in fills every one of them.
 // Needs the Worker (npm run dev in the kit, with HOSPITABLE_PAT=dummy) and
-// the builder (npm run dev) running. Set CHROME_PATH if Chrome lives elsewhere.
+// the builder (npm run dev) running, with the Worker's WIDGET_URL pointing at the
+// builder's /hosp/widget.js (node dev.mjs does both). Set CHROME_PATH if Chrome lives elsewhere.
 
 import puppeteer from 'puppeteer-core';
 
@@ -14,7 +17,8 @@ const WORKER = process.env.WORKER || 'http://127.0.0.1:8787';
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const widgetSrc = new URL('/hosp/widget.js', BUILDER).href;
 
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new' });
+// The guest check's page (localhost) frames the Worker (127.0.0.1): two sites, both on this machine.
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--disable-features=LocalNetworkAccessChecks'] });
 const page = await browser.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(`builder: ${e.message}`));
@@ -34,9 +38,10 @@ const visible = (el) => {
 };
 const text = (sel) => page.$eval(sel, (el, fn) => new Function('el', `return (${fn})(el)`)(el), visible.toString());
 await page.click('.step[data-step="design"]');
-const types = await page.$$eval('.type', (els) => els.map((e) => e.dataset.type));
-if (types.length !== 16) {
-  console.log(`Expected 16 widget types, found ${types.length}`);
+const types = await page.$$eval('[role="listbox"][aria-label="Widget"] .type', (els) => els.map((e) => e.dataset.type));
+const guestTypes = await page.$$eval('[role="listbox"][aria-label="For signed-in guests"] .type', (els) => els.map((e) => e.dataset.type));
+if (types.length !== 16 || guestTypes.length !== 8) {
+  console.log(`Expected 16 widget types and 8 for signed-in guests, found ${types.length} and ${guestTypes.length}`);
   process.exit(1);
 }
 let failed = 0;
@@ -136,6 +141,46 @@ for (const type of types) {
   console.log(`${state === 'unavailable' ? '✓' : '✗'} first visit, Worker down → ${state}`);
   if (state !== 'unavailable') failed++;
   await context.close();
+}
+
+// Widgets for signed-in guests: signed out first, then one sign-in fills them all.
+{
+  const site = `http://localhost:${new URL(BUILDER).port || 80}/__guest-e2e`;
+  const frames = guestTypes.map((t) => `<iframe id="${t}" src="${WORKER}/embed/${t}?data=stay&modules=guest" style="display:block;width:100%;height:600px;border:0"></iframe>`).join('');
+  const p = await browser.newPage();
+  p.on('pageerror', (e) => errors.push(`guest page: ${e.message}`));
+  await p.setRequestInterception(true);
+  p.on('request', (r) => (r.url() === site ? r.respond({ status: 200, contentType: 'text/html', body: `<!doctype html><html><body>${frames}</body></html>` }) : r.continue()));
+  await p.goto(site, { waitUntil: 'networkidle0' });
+  const frameOf = async (t) => (await p.$(`#${t}`)).contentFrame();
+  const shown = async (t) => (await frameOf(t)).evaluate((fn) => {
+    const el = document.querySelector('[data-hosp]');
+    return { state: el?.getAttribute('data-hosp-state'), text: el ? new Function('el', `return (${fn})(el)`)(el) : '' };
+  }, visible.toString());
+  const login = await frameOf('guest-login');
+  await login.waitForFunction(() => document.querySelector('[data-hosp]')?.shadowRoot?.querySelector('form'), { timeout: 15000 });
+  const out = await shown('door-code');
+  await login.evaluate(() => {
+    const f = document.querySelector('[data-hosp]').shadowRoot.querySelector('form');
+    f.elements.code.value = 'HM4CXJ4KPX';
+    f.elements.check.value = 'Moore';
+  });
+  await (await login.evaluateHandle(() => document.querySelector('[data-hosp]').shadowRoot.querySelector('button[type=submit]'))).click();
+  await new Promise((r) => setTimeout(r, 2500));
+  const hostKeys = await p.evaluate(() => Object.keys(localStorage));
+  const problems = [];
+  if (!out.text.includes('Sign in with your booking')) problems.push('door code showed something before signing in');
+  if (hostKeys.length) problems.push(`the website's own storage got ${hostKeys.join(', ')}`);
+  for (const t of guestTypes) {
+    const got = await shown(t);
+    if (got.state !== 'live') problems.push(`${t} is ${got.state}`);
+    if (/Sign in with your booking|Find your booking/.test(got.text)) problems.push(`${t} still signed out`);
+    if (/\{[#^/]?[a-z_][\w.]*\}/i.test(got.text)) problems.push(`${t} shows a raw {tag}`);
+  }
+  if (!(await shown('door-code')).text.includes('4711')) problems.push('no door code on arrival day');
+  console.log(`${problems.length ? '✗' : '✓'} ${guestTypes.length} guest widgets: one sign-in fills every frame${problems.length ? '\n    ' + problems.join('\n    ') : ''}`);
+  if (problems.length) failed++;
+  await p.close();
 }
 
 await browser.close();

@@ -2,7 +2,7 @@ import { config } from '@/config';
 import type { HospWidgets, WidgetModule } from '@/types';
 
 /** The builder renders every widget type, so it loads every module up front. */
-export const ALL_MODULES: WidgetModule[] = ['analyze', 'templates', 'calendar', 'reviews', 'lightbox', 'pager'];
+export const ALL_MODULES: WidgetModule[] = ['analyze', 'templates', 'calendar', 'reviews', 'lightbox', 'pager', 'guest'];
 
 let loading: Promise<HospWidgets> | null = null;
 

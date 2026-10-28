@@ -2,12 +2,12 @@
 // saved in localStorage, so returning from Cloudflare keeps everything.
 
 import { computed, reactive, shallowRef, watch } from 'vue';
-import type { Connection, Dataset, Design, Device, Platform, PreviewSource, Step, WidgetData, WidgetStyle, WidgetType } from '@/types';
+import type { CodeKind, Connection, Dataset, Design, Device, GuestView, Platform, PreviewSource, Step, WidgetData, WidgetStyle, WidgetType } from '@/types';
 import { STARTERS, T, attrOptions, base, changedOptions, displayOptions } from '@/lib/templates';
 import { DEFAULT_STYLE, PRESETS, changedStyle } from '@/lib/style';
-import { WIDGET_TYPES } from '@/lib/catalog';
+import { WIDGET_TYPES, isGuestType } from '@/lib/catalog';
 import { asParsed } from '@/lib/html';
-import { sampleData, sampleProperties } from '@/lib/sample';
+import { sampleData, sampleProperties, sampleStay } from '@/lib/sample';
 import { connectWorker, normalizeWorker, type ConnectResult } from '@/lib/worker';
 import { W } from '@/lib/widget';
 import { config } from '@/config';
@@ -25,6 +25,8 @@ interface Persisted {
   dark: boolean;
   sampleProperty: string;
   platform: Platform;
+  guestView: GuestView;
+  codeKind: CodeKind;
 }
 
 function load(): Persisted {
@@ -45,6 +47,8 @@ function load(): Persisted {
     dark: saved.dark ?? false,
     sampleProperty: saved.sampleProperty || sampleProperties[0].id,
     platform: saved.platform ?? 'wix',
+    guestView: saved.guestView ?? 'arrival',
+    codeKind: saved.codeKind ?? 'snippet',
   };
 }
 
@@ -114,8 +118,14 @@ export const snippetStyle = computed(() => T().writeParams(changedStyle(state.st
 
 export const datasets = computed<Dataset[]>(() => (runtime.ready ? W().analyze(template.value).datasets : ['property']));
 
-/** Widgets like Property list and Meet your host need no property ID. */
-export const needsProperty = computed(() => datasets.value.some((d) => d !== 'host' && d !== 'properties'));
+/** Widgets like Property list and Meet your host need no property ID; a guest's widgets find theirs from the booking. */
+export const needsProperty = computed(() => datasets.value.some((d) => d !== 'host' && d !== 'properties' && d !== 'stay'));
+
+/** A widget for signed-in guests: previewed with a sample stay, copied as an iframe. */
+export const guestWidget = computed(() => isGuestType(state.type));
+
+/** What the Copy step hands over: guest widgets only work as an iframe. */
+export const codeKind = computed<CodeKind>(() => (guestWidget.value ? 'iframe' : state.codeKind));
 
 export function setOption(key: string, value: string) {
   design.value.options[key] = value;
@@ -178,6 +188,13 @@ async function loadPreviewData() {
   const seq = ++loadSeq;
   const sets = datasets.value;
   const conn = runtime.connection;
+  // Nobody signs in to the builder, so a guest's widgets always preview a sample stay.
+  if (sets.includes('stay')) {
+    previewData.value = sampleStay(state.guestView);
+    runtime.source = 'sample';
+    runtime.dataError = '';
+    return;
+  }
   const canUseWorker = conn && (selectedProperty.value || !needsProperty.value);
   if (!canUseWorker) {
     previewData.value = sampleData(state.sampleProperty, sets);
@@ -200,7 +217,7 @@ async function loadPreviewData() {
 }
 
 watch(
-  () => [runtime.ready, datasets.value.join(), runtime.connection, state.property, state.sampleProperty],
+  () => [runtime.ready, datasets.value.join(), runtime.connection, state.property, state.sampleProperty, state.guestView],
   loadPreviewData,
   { immediate: true },
 );

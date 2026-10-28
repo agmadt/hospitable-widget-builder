@@ -1,9 +1,9 @@
 import { computed } from 'vue';
 import { config } from '@/config';
-import { buildSnippet } from '@/lib/snippet';
+import { buildSnippet, embedUrl, iframeCode } from '@/lib/snippet';
 import { T } from '@/lib/templates';
 import { W } from '@/lib/widget';
-import { attrs, datasets, design, needsProperty, runtime, snippetOptions, snippetStyle, state, template } from '@/stores/builder';
+import { attrs, datasets, design, needsProperty, runtime, snippetOptions, snippetStyle, starter, state, template } from '@/stores/builder';
 
 /** The snippet for the current design, or null until a Worker is connected. */
 export function useSnippet() {
@@ -28,5 +28,24 @@ export function useSnippet() {
   }
 
   const snippet = computed(() => build());
-  return { snippet, build };
+
+  /** The widget as a page of its own on the Worker, for an iframe (a link, and the iframe code). */
+  const embed = computed(() => {
+    const conn = runtime.connection;
+    if (!conn || !runtime.ready) return null;
+    const link = embedUrl({
+      hosp: W(),
+      type: state.type,
+      template: template.value,
+      worker: conn.worker,
+      property: needsProperty.value ? state.property : '',
+      options: snippetOptions.value,
+      style: snippetStyle.value,
+      attrs: attrs.value,
+    });
+    const height = runtime.heights?.desktop ?? starter.value.meta.height ?? 480;
+    return { link, code: iframeCode(link, starter.value.meta.name, height) };
+  });
+
+  return { snippet, build, embed };
 }

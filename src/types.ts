@@ -1,4 +1,4 @@
-export type Dataset = 'property' | 'calendar' | 'reviews' | 'guide' | 'host' | 'properties';
+export type Dataset = 'property' | 'calendar' | 'reviews' | 'guide' | 'host' | 'properties' | 'stay';
 
 /** Merged widget data, as the Worker serves it. */
 export type WidgetData = Record<string, unknown>;
@@ -7,7 +7,7 @@ export type WidgetData = Record<string, unknown>;
 export type DisplayOptions = Record<string, string>;
 
 /** The modules widget.js can load next to itself. Formatting is built in. */
-export type WidgetModule = 'analyze' | 'templates' | 'calendar' | 'reviews' | 'lightbox' | 'pager';
+export type WidgetModule = 'analyze' | 'templates' | 'calendar' | 'reviews' | 'lightbox' | 'pager' | 'guest';
 
 /** The API widget.js puts on window.HospWidgets. */
 export interface HospWidgets {
@@ -54,6 +54,8 @@ export interface TemplateMeta {
   name: string;
   blurb?: string;
   height?: number;
+  /** Shows a signed-in guest's stay: only works as an embed from the Worker. */
+  guest?: boolean;
   options: TemplateOption[];
 }
 
@@ -64,7 +66,8 @@ export interface StarterTemplate {
 
 export type WidgetType =
   | 'description' | 'key-facts' | 'amenities' | 'gallery' | 'house-rules' | 'sleeping' | 'space-area' | 'reviews'
-  | 'rating-summary' | 'calendar' | 'price-from' | 'policies-fees' | 'local-guide' | 'also-listed-on' | 'meet-host' | 'property-list';
+  | 'rating-summary' | 'calendar' | 'price-from' | 'policies-fees' | 'local-guide' | 'also-listed-on' | 'meet-host' | 'property-list'
+  | 'guest-login' | 'stay-summary' | 'door-code' | 'wifi' | 'getting-there' | 'house-manual' | 'payment' | 'guest-guide';
 
 export type CardStyle = 'card-border' | 'card-shadow' | '';
 
@@ -88,8 +91,12 @@ export interface Design {
 }
 
 export type Step = 'design' | 'deploy' | 'connect' | 'copy';
+/** What a guest widget's preview shows: before signing in, a stay weeks away, arrival day. */
+export type GuestView = 'out' | 'early' | 'arrival';
+/** How the Copy step hands over a widget: a snippet, or an iframe of the Worker's embed page. */
+export type CodeKind = 'snippet' | 'iframe';
 export type Device = 'desktop' | 'tablet' | 'phone';
-export type Platform = 'wix' | 'squarespace' | 'wordpress' | 'webflow' | 'other';
+export type Platform = 'pages' | 'wix' | 'squarespace' | 'wordpress' | 'webflow' | 'other';
 
 export interface PropertySummary {
   id: string;
@@ -113,8 +120,19 @@ export interface WorkerStatus {
   partial: boolean;
 }
 
+/** Guest sign-in on a Worker (kit 1.3 and newer). */
+export interface GuestStatus {
+  on: boolean;
+  missing: string[];
+  /** Websites allowed to show guest widgets, as written in GUEST_SITES; "*" in dummy mode. */
+  sites: string[];
+  reveal_hours: number;
+}
+
 export interface Connection {
   worker: string;
+  /** Null for Workers from before guest sign-in. */
+  guest: GuestStatus | null;
   mode: 'live' | 'dummy';
   properties: PropertySummary[];
   status: WorkerStatus | null;

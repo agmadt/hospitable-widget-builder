@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue';
 import WidgetPreview from './WidgetPreview.vue';
-import type { Device } from '@/types';
-import { sampleProperties } from '@/lib/sample';
-import { previewData, previewOptions, runtime, selectedProperty, state, template } from '@/stores/builder';
+import type { Device, GuestView } from '@/types';
+import { sampleProperties, sampleStay } from '@/lib/sample';
+import { guestWidget, previewData, previewOptions, runtime, selectedProperty, state, template } from '@/stores/builder';
 import { T } from '@/lib/templates';
 
 const DEVICES: { id: Device; label: string; icon: string }[] = [
@@ -12,7 +12,15 @@ const DEVICES: { id: Device; label: string; icon: string }[] = [
   { id: 'phone', label: 'Phone', icon: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>' },
 ];
 
+const GUEST_VIEWS: { id: GuestView; label: string }[] = [
+  { id: 'out', label: 'Signed out' },
+  { id: 'early', label: 'Weeks before' },
+  { id: 'arrival', label: 'Arrival day' },
+];
+
 const previewState = computed(() => runtime.source);
+// The embed's height is the signed-in guest's, the tallest view.
+const measureData = computed(() => (guestWidget.value ? sampleStay('arrival') : undefined));
 
 // Web fonts live in the document: a font declared inside a shadow root isn't applied.
 watchEffect(() => {
@@ -29,7 +37,13 @@ watchEffect(() => {
         </button>
       </div>
       <div class="data-src">
-        <template v-if="runtime.source === 'sample'">
+        <template v-if="guestWidget">
+          <span class="badge sample">Sample stay</span>
+          <div class="seg small" role="radiogroup" aria-label="Guest">
+            <button v-for="v in GUEST_VIEWS" :key="v.id" type="button" :data-view="v.id" :aria-pressed="state.guestView === v.id" @click="state.guestView = v.id">{{ v.label }}</button>
+          </div>
+        </template>
+        <template v-else-if="runtime.source === 'sample'">
           <span class="badge sample">Sample data</span>
           <select v-model="state.sampleProperty" class="mini" aria-label="Sample property">
             <option v-for="p in sampleProperties" :key="p.id" :value="p.id">{{ p.property_name }}</option>
@@ -46,11 +60,13 @@ watchEffect(() => {
     <div class="canvas">
       <div class="browser" :class="state.device">
         <div class="chrome"><i /><i /><i /><span>yourwebsite.com</span></div>
-        <div class="page" :class="{ dark: state.dark }">
+        <!-- Signing in or out in the preview flips the sample guest. -->
+        <div class="page" :class="{ dark: state.dark }" @hosp:signin="state.guestView = 'arrival'" @hosp:signout="state.guestView = 'out'">
           <div class="page-ghost" aria-hidden="true"><b /><i /><i /></div>
           <WidgetPreview
             :template="template"
             :data="previewData"
+            :measure-data="measureData"
             :options="previewOptions"
             :state="previewState"
             :ready="runtime.ready"

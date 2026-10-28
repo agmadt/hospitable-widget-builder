@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { attrOptions, changedOptions, displayOptions } from '@/lib/templates';
-import { buildSnippet, type SnippetInput } from '@/lib/snippet';
+import { buildSnippet, embedUrl, iframeCode, type SnippetInput } from '@/lib/snippet';
 import type { HospWidgets, TemplateMeta } from '@/types';
 
 const meta: TemplateMeta = {
@@ -64,5 +64,29 @@ describe('snippet', () => {
     expect(out).toContain('data-hosp-template="hosp-reviews-ab12"');
     expect(out).not.toContain('data-hosp="');
     expect(out).not.toContain('data-hosp-options');
+  });
+});
+
+describe('embed', () => {
+  const hosp = (datasets: string[], modules: string[]) => ({ analyze: () => ({ fields: [], datasets }), plan: () => modules }) as unknown as HospWidgets;
+  const base = { template: '', worker: 'https://w.example.workers.dev', property: 'p1', options: 'heading=Inside%20the%20villa', style: 'accent=%23c2410c', attrs: { 'amenities-limit': '8' } };
+
+  it('puts a snippet’s choices in the embed page’s query', () => {
+    const url = embedUrl({ ...base, hosp: hosp(['property'], ['templates']), type: 'amenities' });
+    expect(url).toBe('https://w.example.workers.dev/embed/amenities?property=p1&data=property&modules=&options=heading%3DInside%2520the%2520villa&style=accent%3D%2523c2410c&amenities-limit=8');
+    // The Worker reads the query back into exactly the snippet's attribute values.
+    const q = new URL(url).searchParams;
+    expect([q.get('options'), q.get('style')]).toEqual(['heading=Inside%20the%20villa', 'accent=%23c2410c']);
+  });
+
+  it('names no property for a guest widget: the booking decides', () => {
+    const url = embedUrl({ ...base, hosp: hosp(['stay'], ['guest']), type: 'door-code', options: '', style: '', attrs: {} });
+    expect(url).toBe('https://w.example.workers.dev/embed/door-code?data=stay&modules=guest');
+  });
+
+  it('writes an iframe that can copy, at the measured height', () => {
+    expect(iframeCode('https://w.example.workers.dev/embed/wifi?data=stay&modules=guest', 'Wi-Fi "home"', 279.4)).toBe(
+      '<iframe src="https://w.example.workers.dev/embed/wifi?data=stay&amp;modules=guest" title="Wi-Fi &quot;home&quot;" loading="lazy" allow="clipboard-write" style="display:block;width:100%;height:279px;border:0"></iframe>',
+    );
   });
 });

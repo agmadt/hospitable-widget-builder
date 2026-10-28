@@ -30,5 +30,18 @@ for (const p of list.properties) {
     guide: await get(`/api/properties/${id}/guide`),
   };
 }
+// A signed-in guest's stay, for the guest widgets: the sample bookings that
+// arrive today and in twelve days (see the kit's src/fixtures/dummy.json).
+async function stayOf(code, check) {
+  const login = await fetch(worker + '/stay/login', { method: 'POST', headers: { Origin: worker, 'Content-Type': 'application/json' }, body: JSON.stringify({ code, check }) });
+  if (!login.ok) throw new Error(`/stay/login for ${code}: HTTP ${login.status}`);
+  const res = await fetch(worker + '/stay', { headers: { Authorization: `Bearer ${(await login.json()).token}` } });
+  if (!res.ok || res.headers.get('X-Hosp-Mode') !== 'dummy') throw new Error(`/stay for ${code}: HTTP ${res.status}`);
+  const body = await res.json();
+  delete body.mode;
+  return body;
+}
+sample.stays = { arrival: await stayOf('HM4CXJ4KPX', 'Moore'), early: await stayOf('4182736455', 'Becker') };
+
 await writeFile(out, JSON.stringify(sample) + '\n');
 console.log(`Wrote ${out} (${list.properties.length} properties)`);

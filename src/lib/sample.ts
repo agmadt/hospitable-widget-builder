@@ -2,13 +2,15 @@
 // Refresh it from a dummy-mode Worker with `npm run sync-sample`.
 
 import sample from '@/assets/dummy.json';
-import type { Dataset, PropertySummary, WidgetData } from '@/types';
+import type { Dataset, GuestView, PropertySummary, WidgetData } from '@/types';
 
 interface SampleFile {
   generated: string;
   host: WidgetData;
   properties: PropertySummary[];
   data: Record<string, { property: WidgetData; calendar: { currency: string; calendar: CalendarDay[] }; reviews: WidgetData; guide: WidgetData }>;
+  /** A signed-in guest's /stay: arriving the day it was generated, and twelve days later. */
+  stays: Record<Exclude<GuestView, 'out'>, WidgetData>;
 }
 
 interface CalendarDay {
@@ -43,10 +45,26 @@ export function sampleData(propertyId: string, datasets: Dataset[]): WidgetData 
     guide: d.guide,
     host: SAMPLE.host,
     properties: { properties: SAMPLE.properties },
+    stay: sampleStay('arrival'),
   };
   const merged: WidgetData = { sample_data: true };
   for (const set of datasets) Object.assign(merged, parts[set]);
   return merged;
+}
+
+const STAY_DATES = ['stay_arrival_date', 'stay_departure_date', 'stay_access_date'];
+
+/** A guest's stay as the preview shows it: signed out, weeks away, or arriving today. */
+export function sampleStay(view: GuestView, now = new Date()): WidgetData {
+  if (view === 'out') return { signed_in: false, sample_data: true };
+  const stay: WidgetData = { ...SAMPLE.stays[view], sample_data: true };
+  // Saved on a fixed day; move the dates so the stay is as far away as it was then.
+  const shift = Math.round((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.parse(SAMPLE.generated + 'T00:00:00Z')) / DAY);
+  for (const key of STAY_DATES) {
+    const v = stay[key];
+    if (typeof v === 'string' && shift) stay[key] = new Date(Date.parse(v + 'T00:00:00Z') + shift * DAY).toISOString().slice(0, 10);
+  }
+  return stay;
 }
 
 /** Field names of the property data set, used to cut the fallback snapshot down. */
